@@ -38,9 +38,9 @@ export async function registerAction(prevState: any, formData: FormData) {
     });
 
     await createSession(newUser.id);
-  } catch (error) {
-    console.error('Registration error:', error);
-    return { error: 'Something went wrong during registration.' };
+  } catch (error: any) {
+    console.error('[registerAction Exception]:', error);
+    return { error: error?.message || 'Something went wrong during registration.' };
   }
 
   redirect('/');
@@ -70,9 +70,9 @@ export async function loginAction(prevState: any, formData: FormData) {
     }
 
     await createSession(user.id);
-  } catch (error) {
-    console.error('Login error:', error);
-    return { error: 'Something went wrong during login.' };
+  } catch (error: any) {
+    console.error('[loginAction Exception]:', error);
+    return { error: error?.message || 'Something went wrong during login.' };
   }
 
   redirect('/');

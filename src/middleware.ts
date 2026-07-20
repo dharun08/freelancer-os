@@ -49,6 +49,7 @@ async function decryptSession(token: string): Promise<SessionData | null> {
     }
     return parsed;
   } catch (error) {
+    console.error('[middleware decryptSession Exception]:', error);
     return null;
   }
 }

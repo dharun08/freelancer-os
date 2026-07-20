@@ -65,6 +65,7 @@ export async function decryptSession(token: string): Promise<{ userId: string; e
     }
     return parsed;
   } catch (error) {
+    console.error('[session decryptSession Exception]:', error);
     return null;
   }
 }
