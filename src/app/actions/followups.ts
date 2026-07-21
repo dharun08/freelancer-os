@@ -2,9 +2,15 @@
 'use server';
 
 import { db } from '@/lib/db';
+import { getSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
 
 export async function createFollowUpAction(formData: FormData) {
+  const session = await getSession();
+  if (!session) {
+    return { error: 'Unauthorized.' };
+  }
+
   const title = formData.get('title') as string;
   const type = formData.get('type') as string || 'Email';
   const notes = formData.get('notes') as string || null;
@@ -18,6 +24,14 @@ export async function createFollowUpAction(formData: FormData) {
   }
 
   try {
+    // Verify client belongs to user
+    const client = await db.client.findFirst({
+      where: { id: clientId, userId: session.userId },
+    });
+    if (!client) {
+      return { error: 'Invalid client selection.' };
+    }
+
     const followUp = await db.followUp.create({
       data: {
         title,
@@ -26,6 +40,7 @@ export async function createFollowUpAction(formData: FormData) {
         status: 'Pending',
         notes,
         clientId,
+        userId: session.userId,
       },
     });
 
@@ -40,7 +55,19 @@ export async function createFollowUpAction(formData: FormData) {
 }
 
 export async function completeFollowUpAction(id: string) {
+  const session = await getSession();
+  if (!session) {
+    return { error: 'Unauthorized.' };
+  }
+
   try {
+    const existing = await db.followUp.findFirst({
+      where: { id, userId: session.userId },
+    });
+    if (!existing) {
+      return { error: 'Unauthorized or Follow-up not found.' };
+    }
+
     const followUp = await db.followUp.update({
       where: { id },
       data: {
@@ -59,11 +86,18 @@ export async function completeFollowUpAction(id: string) {
 }
 
 export async function deleteFollowUpAction(id: string) {
+  const session = await getSession();
+  if (!session) {
+    return { error: 'Unauthorized.' };
+  }
+
   try {
-    const followUp = await db.followUp.findUnique({
-      where: { id },
-      select: { clientId: true },
+    const existing = await db.followUp.findFirst({
+      where: { id, userId: session.userId },
     });
+    if (!existing) {
+      return { error: 'Unauthorized or Follow-up not found.' };
+    }
 
     await db.followUp.delete({
       where: { id },
@@ -71,8 +105,8 @@ export async function deleteFollowUpAction(id: string) {
 
     revalidatePath('/follow-ups');
     revalidatePath('/clients');
-    if (followUp?.clientId) {
-      revalidatePath(`/clients/${followUp.clientId}`);
+    if (existing.clientId) {
+      revalidatePath(`/clients/${existing.clientId}`);
     }
     return { success: true };
   } catch (error) {

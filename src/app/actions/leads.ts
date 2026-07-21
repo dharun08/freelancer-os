@@ -2,9 +2,15 @@
 'use server';
 
 import { db } from '@/lib/db';
+import { getSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
 
 export async function createLeadAction(formData: FormData) {
+  const session = await getSession();
+  if (!session) {
+    return { error: 'Unauthorized.' };
+  }
+
   const title = formData.get('title') as string;
   const contactName = formData.get('contactName') as string;
   const email = formData.get('email') as string;
@@ -29,6 +35,7 @@ export async function createLeadAction(formData: FormData) {
         status,
         pipelineValue,
         notes,
+        userId: session.userId,
       },
     });
     revalidatePath('/leads');
@@ -40,7 +47,19 @@ export async function createLeadAction(formData: FormData) {
 }
 
 export async function updateLeadStatusAction(id: string, status: string) {
+  const session = await getSession();
+  if (!session) {
+    return { error: 'Unauthorized.' };
+  }
+
   try {
+    const existing = await db.lead.findFirst({
+      where: { id, userId: session.userId },
+    });
+    if (!existing) {
+      return { error: 'Unauthorized or Lead not found.' };
+    }
+
     const lead = await db.lead.update({
       where: { id },
       data: { status },
@@ -54,6 +73,11 @@ export async function updateLeadStatusAction(id: string, status: string) {
 }
 
 export async function updateLeadAction(id: string, formData: FormData) {
+  const session = await getSession();
+  if (!session) {
+    return { error: 'Unauthorized.' };
+  }
+
   const title = formData.get('title') as string;
   const contactName = formData.get('contactName') as string;
   const email = formData.get('email') as string;
@@ -68,6 +92,13 @@ export async function updateLeadAction(id: string, formData: FormData) {
   }
 
   try {
+    const existing = await db.lead.findFirst({
+      where: { id, userId: session.userId },
+    });
+    if (!existing) {
+      return { error: 'Unauthorized or Lead not found.' };
+    }
+
     const lead = await db.lead.update({
       where: { id },
       data: {
@@ -90,7 +121,19 @@ export async function updateLeadAction(id: string, formData: FormData) {
 }
 
 export async function deleteLeadAction(id: string) {
+  const session = await getSession();
+  if (!session) {
+    return { error: 'Unauthorized.' };
+  }
+
   try {
+    const existing = await db.lead.findFirst({
+      where: { id, userId: session.userId },
+    });
+    if (!existing) {
+      return { error: 'Unauthorized or Lead not found.' };
+    }
+
     await db.lead.delete({
       where: { id },
     });
@@ -103,10 +146,15 @@ export async function deleteLeadAction(id: string) {
 }
 
 export async function convertLeadToClientAction(id: string) {
+  const session = await getSession();
+  if (!session) {
+    return { error: 'Unauthorized.' };
+  }
+
   try {
     // 1. Fetch the lead
-    const lead = await db.lead.findUnique({
-      where: { id },
+    const lead = await db.lead.findFirst({
+      where: { id, userId: session.userId },
     });
 
     if (!lead) {
@@ -119,7 +167,7 @@ export async function convertLeadToClientAction(id: string) {
     const result = await db.$transaction(async (tx) => {
       // Check if client with this email already exists
       let client = await tx.client.findFirst({
-        where: { email: lead.email },
+        where: { email: lead.email, userId: session.userId },
       });
 
       if (!client) {
@@ -131,6 +179,7 @@ export async function convertLeadToClientAction(id: string) {
             company: lead.company,
             status: 'Active',
             notes: `Converted from Lead: ${lead.title}.\nOriginal Lead Notes:\n${lead.notes || ''}`,
+            userId: session.userId,
           },
         });
       }

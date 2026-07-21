@@ -2,9 +2,15 @@
 'use server';
 
 import { db } from '@/lib/db';
+import { getSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
 
 export async function createProjectAction(formData: FormData) {
+  const session = await getSession();
+  if (!session) {
+    return { error: 'Unauthorized.' };
+  }
+
   const name = formData.get('name') as string;
   const description = formData.get('description') as string || null;
   const status = formData.get('status') as string || 'Planning';
@@ -24,6 +30,14 @@ export async function createProjectAction(formData: FormData) {
   }
 
   try {
+    // Verify client belongs to user
+    const client = await db.client.findFirst({
+      where: { id: clientId, userId: session.userId },
+    });
+    if (!client) {
+      return { error: 'Invalid client selection.' };
+    }
+
     const project = await db.project.create({
       data: {
         name,
@@ -34,6 +48,7 @@ export async function createProjectAction(formData: FormData) {
         startDate,
         plannedEndDate,
         actualEndDate,
+        userId: session.userId,
       },
     });
     revalidatePath('/projects');
@@ -47,13 +62,22 @@ export async function createProjectAction(formData: FormData) {
 }
 
 export async function updateProjectStatusAction(id: string, status: string) {
+  const session = await getSession();
+  if (!session) {
+    return { error: 'Unauthorized.' };
+  }
+
   try {
-    const data: any = { status };
-    // Automatically clear or retain actualEndDate? Standard practice is if status is not completed, we might nullify actualEndDate, or keep it.
-    // Let's just update the status.
+    const existing = await db.project.findFirst({
+      where: { id, userId: session.userId },
+    });
+    if (!existing) {
+      return { error: 'Unauthorized or Project not found.' };
+    }
+
     const project = await db.project.update({
       where: { id },
-      data,
+      data: { status },
     });
     revalidatePath('/projects');
     return { success: true, project };
@@ -64,6 +88,11 @@ export async function updateProjectStatusAction(id: string, status: string) {
 }
 
 export async function updateProjectAction(id: string, formData: FormData) {
+  const session = await getSession();
+  if (!session) {
+    return { error: 'Unauthorized.' };
+  }
+
   const name = formData.get('name') as string;
   const description = formData.get('description') as string || null;
   const status = formData.get('status') as string;
@@ -76,8 +105,6 @@ export async function updateProjectAction(id: string, formData: FormData) {
   
   const startDate = startDateStr ? new Date(startDateStr) : null;
   const plannedEndDate = plannedEndDateStr ? new Date(plannedEndDateStr) : null;
-  
-  // Only update actualEndDate if status is Completed (as requested by user)
   const actualEndDate = status === 'Completed' && actualEndDateStr ? new Date(actualEndDateStr) : null;
 
   if (!name || !clientId) {
@@ -85,6 +112,20 @@ export async function updateProjectAction(id: string, formData: FormData) {
   }
 
   try {
+    const existing = await db.project.findFirst({
+      where: { id, userId: session.userId },
+    });
+    if (!existing) {
+      return { error: 'Unauthorized or Project not found.' };
+    }
+
+    const client = await db.client.findFirst({
+      where: { id: clientId, userId: session.userId },
+    });
+    if (!client) {
+      return { error: 'Invalid client selection.' };
+    }
+
     const project = await db.project.update({
       where: { id },
       data: {
@@ -95,7 +136,7 @@ export async function updateProjectAction(id: string, formData: FormData) {
         clientId,
         startDate,
         plannedEndDate,
-        actualEndDate: status === 'Completed' ? actualEndDate : null, // Clear if moved away from Completed
+        actualEndDate: status === 'Completed' ? actualEndDate : null,
       },
     });
     revalidatePath('/projects');
@@ -109,11 +150,18 @@ export async function updateProjectAction(id: string, formData: FormData) {
 }
 
 export async function deleteProjectAction(id: string) {
+  const session = await getSession();
+  if (!session) {
+    return { error: 'Unauthorized.' };
+  }
+
   try {
-    const project = await db.project.findUnique({
-      where: { id },
-      select: { clientId: true },
+    const existing = await db.project.findFirst({
+      where: { id, userId: session.userId },
     });
+    if (!existing) {
+      return { error: 'Unauthorized or Project not found.' };
+    }
 
     await db.project.delete({
       where: { id },
@@ -121,8 +169,8 @@ export async function deleteProjectAction(id: string) {
 
     revalidatePath('/projects');
     revalidatePath('/clients');
-    if (project?.clientId) {
-      revalidatePath(`/clients/${project.clientId}`);
+    if (existing.clientId) {
+      revalidatePath(`/clients/${existing.clientId}`);
     }
     return { success: true };
   } catch (error) {

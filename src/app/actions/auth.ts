@@ -6,14 +6,37 @@ import { createSession, deleteSession } from '@/lib/session';
 import bcrypt from 'bcryptjs';
 import { redirect } from 'next/navigation';
 
+function validatePassword(password: string): string | null {
+  if (password.length < 8) {
+    return 'Password must be at least 8 characters long.';
+  }
+  if (!/[A-Z]/.test(password)) {
+    return 'Password must contain at least one uppercase letter.';
+  }
+  if (!/[a-z]/.test(password)) {
+    return 'Password must contain at least one lowercase letter.';
+  }
+  if (!/[0-9]/.test(password)) {
+    return 'Password must contain at least one number.';
+  }
+  return null;
+}
+
 export async function registerAction(prevState: any, formData: FormData) {
   const name = formData.get('name') as string;
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
+  const emailInput = formData.get('email') as string || '';
+  const password = formData.get('password') as string || '';
   const companyName = formData.get('companyName') as string || '';
+
+  const email = emailInput.trim().toLowerCase();
 
   if (!name || !email || !password) {
     return { error: 'Name, email, and password are required.' };
+  }
+
+  const passwordError = validatePassword(password);
+  if (passwordError) {
+    return { error: passwordError };
   }
 
   try {
@@ -22,7 +45,7 @@ export async function registerAction(prevState: any, formData: FormData) {
     });
 
     if (existingUser) {
-      return { error: 'An account with this email already exists.' };
+      return { error: 'An account with this email address already exists.' };
     }
 
     const salt = await bcrypt.genSalt(10);
@@ -47,8 +70,10 @@ export async function registerAction(prevState: any, formData: FormData) {
 }
 
 export async function loginAction(prevState: any, formData: FormData) {
-  const email = formData.get('email') as string;
-  const password = formData.get('password') as string;
+  const emailInput = formData.get('email') as string || '';
+  const password = formData.get('password') as string || '';
+
+  const email = emailInput.trim().toLowerCase();
 
   if (!email || !password) {
     return { error: 'Email and password are required.' };

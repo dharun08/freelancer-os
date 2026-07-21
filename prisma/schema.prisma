@@ -1,6 +1,7 @@
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 generator client {
@@ -8,68 +9,79 @@ generator client {
 }
 
 model User {
-  id           String   @id @default(uuid())
-  email        String   @unique
+  id           String     @id @default(uuid())
+  email        String     @unique
   passwordHash String
   name         String
   companyName  String?
   logoUrl      String?
-  currency     String   @default("USD")
-  timeZone     String   @default("UTC")
-  dateFormat   String   @default("MM/DD/YYYY")
-  theme        String   @default("light")
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  currency     String     @default("USD")
+  timeZone     String     @default("UTC")
+  dateFormat   String     @default("MM/DD/YYYY")
+  theme        String     @default("light")
+  clients      Client[]
+  leads        Lead[]
+  projects     Project[]
+  invoices     Invoice[]
+  followUps    FollowUp[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
 
 model Client {
-  id          String      @id @default(uuid())
-  name        String
-  email       String
-  phone       String?
-  company     String?
-  status      String      @default("Active") // Lead, Active, Inactive, Lost
-  notes       String?
-  projects    Project[]
-  invoices    Invoice[]
-  followUps   FollowUp[]
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  id        String     @id @default(uuid())
+  name      String
+  email     String
+  phone     String?
+  company   String?
+  status    String     @default("Active") // Lead, Active, Inactive, Lost
+  notes     String?
+  userId    String
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  projects  Project[]
+  invoices  Invoice[]
+  followUps FollowUp[]
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 
 model Lead {
-  id            String   @id @default(uuid())
+  id            String    @id @default(uuid())
   title         String
   contactName   String
   email         String
   phone         String?
   company       String?
-  status        String   @default("Prospect") // Prospect, Contacted, Proposal Sent, Negotiating, Won, Lost
-  pipelineValue Float    @default(0.0)
+  status        String    @default("Prospect") // Prospect, Contacted, Proposal Sent, Negotiating, Won, Lost
+  pipelineValue Float     @default(0.0)
   notes         String?
   convertedAt   DateTime?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
 }
 
 model Project {
-  id          String   @id @default(uuid())
-  name        String
-  description String?
-  status      String   @default("Planning") // Planning, In Progress, Review, Completed, On Hold
-  startDate   DateTime?
+  id             String    @id @default(uuid())
+  name           String
+  description    String?
+  status         String    @default("Planning") // Planning, In Progress, Review, Completed, On Hold
+  startDate      DateTime?
   plannedEndDate DateTime?
   actualEndDate  DateTime?
-  budget      Float    @default(0.0)
-  clientId    String
-  client      Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  budget         Float     @default(0.0)
+  clientId       String
+  client         Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 }
 
 model Invoice {
   id                String   @id @default(uuid())
-  invoiceNumber     String   @unique
+  invoiceNumber     String
   status            String   @default("Draft") // Draft, Sent, Paid, Overdue
   issueDate         DateTime @default(now())
   dueDate           DateTime
@@ -78,8 +90,12 @@ model Invoice {
   outstandingAmount Float    @default(0.0)
   clientId          String
   client            Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  userId            String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+
+  @@unique([userId, invoiceNumber])
 }
 
 model FollowUp {
@@ -91,6 +107,8 @@ model FollowUp {
   notes     String?
   clientId  String
   client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

@@ -1,11 +1,21 @@
 import React from 'react';
 import { db } from '@/lib/db';
+import { getSession } from '@/lib/session';
+import { redirect } from 'next/navigation';
 import ClientsClient from './ClientsClient';
 
 export const dynamic = 'force-dynamic';
 
 export default async function ClientsPage() {
+  const session = await getSession();
+  if (!session) {
+    redirect('/login');
+  }
+
   const clients = await db.client.findMany({
+    where: {
+      userId: session.userId,
+    },
     include: {
       projects: true,
       invoices: true,

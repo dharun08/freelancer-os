@@ -1,7 +1,8 @@
 import React from 'react';
 import Link from 'next/link';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { db } from '@/lib/db';
+import { getSession } from '@/lib/session';
 import { 
   ArrowLeft, 
   Building, 
@@ -21,10 +22,15 @@ interface PageProps {
 }
 
 export default async function ClientDetailPage({ params }: PageProps) {
+  const session = await getSession();
+  if (!session) {
+    redirect('/login');
+  }
+
   const { id } = await params;
 
-  const client = await db.client.findUnique({
-    where: { id },
+  const client = await db.client.findFirst({
+    where: { id, userId: session.userId },
     include: {
       projects: {
         orderBy: { createdAt: 'desc' },

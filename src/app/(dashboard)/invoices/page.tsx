@@ -1,11 +1,21 @@
 import React from 'react';
 import { db } from '@/lib/db';
+import { getSession } from '@/lib/session';
+import { redirect } from 'next/navigation';
 import InvoicesClient from './InvoicesClient';
 
 export const dynamic = 'force-dynamic';
 
 export default async function InvoicesPage() {
+  const session = await getSession();
+  if (!session) {
+    redirect('/login');
+  }
+
   const invoices = await db.invoice.findMany({
+    where: {
+      userId: session.userId,
+    },
     include: {
       client: true,
     },
@@ -15,6 +25,9 @@ export default async function InvoicesPage() {
   });
 
   const clients = await db.client.findMany({
+    where: {
+      userId: session.userId,
+    },
     orderBy: {
       name: 'asc',
     },

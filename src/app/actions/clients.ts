@@ -2,9 +2,15 @@
 'use server';
 
 import { db } from '@/lib/db';
+import { getSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
 
 export async function createClientAction(formData: FormData) {
+  const session = await getSession();
+  if (!session) {
+    return { error: 'Unauthorized.' };
+  }
+
   const name = formData.get('name') as string;
   const email = formData.get('email') as string;
   const phone = formData.get('phone') as string || null;
@@ -25,6 +31,7 @@ export async function createClientAction(formData: FormData) {
         company,
         status,
         notes,
+        userId: session.userId,
       },
     });
     revalidatePath('/clients');
@@ -36,6 +43,11 @@ export async function createClientAction(formData: FormData) {
 }
 
 export async function updateClientAction(id: string, formData: FormData) {
+  const session = await getSession();
+  if (!session) {
+    return { error: 'Unauthorized.' };
+  }
+
   const name = formData.get('name') as string;
   const email = formData.get('email') as string;
   const phone = formData.get('phone') as string || null;
@@ -48,6 +60,14 @@ export async function updateClientAction(id: string, formData: FormData) {
   }
 
   try {
+    // Verify client belongs to user
+    const existing = await db.client.findFirst({
+      where: { id, userId: session.userId },
+    });
+    if (!existing) {
+      return { error: 'Unauthorized or Client not found.' };
+    }
+
     const client = await db.client.update({
       where: { id },
       data: {
@@ -69,7 +89,20 @@ export async function updateClientAction(id: string, formData: FormData) {
 }
 
 export async function deleteClientAction(id: string) {
+  const session = await getSession();
+  if (!session) {
+    return { error: 'Unauthorized.' };
+  }
+
   try {
+    // Verify client belongs to user
+    const existing = await db.client.findFirst({
+      where: { id, userId: session.userId },
+    });
+    if (!existing) {
+      return { error: 'Unauthorized or Client not found.' };
+    }
+
     await db.client.delete({
       where: { id },
     });

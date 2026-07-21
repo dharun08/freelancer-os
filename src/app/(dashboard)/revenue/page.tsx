@@ -1,24 +1,41 @@
 import React from 'react';
 import { db } from '@/lib/db';
+import { getSession } from '@/lib/session';
+import { redirect } from 'next/navigation';
 import RevenueClient from './RevenueClient';
 
 export const dynamic = 'force-dynamic';
 
 export default async function RevenuePage() {
+  const session = await getSession();
+  if (!session) {
+    redirect('/login');
+  }
+
   const invoices = await db.invoice.findMany({
+    where: {
+      userId: session.userId,
+    },
     include: {
       client: true,
     },
   });
 
   const clients = await db.client.findMany({
+    where: {
+      userId: session.userId,
+    },
     include: {
       invoices: true,
       projects: true,
     },
   });
 
-  const projects = await db.project.findMany();
+  const projects = await db.project.findMany({
+    where: {
+      userId: session.userId,
+    },
+  });
 
   // 1. Calculate General Metrics
   const paidInvoices = invoices.filter((i) => i.status === 'Paid');

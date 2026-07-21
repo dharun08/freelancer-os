@@ -39,6 +39,7 @@ async function main() {
       company: 'Acme Corporation',
       status: 'Active',
       notes: 'Main corporate client. Prefers email updates over phone calls.',
+      userId: user.id,
     },
   });
 
@@ -50,6 +51,7 @@ async function main() {
       company: 'Globex Inc',
       status: 'Active',
       notes: 'Database optimization client. Extremely tech-savvy.',
+      userId: user.id,
     },
   });
 
@@ -61,6 +63,7 @@ async function main() {
       company: 'Stark Industries',
       status: 'Lead',
       notes: 'Potential large-scale client for internal UI dashboards.',
+      userId: user.id,
     },
   });
 
@@ -77,6 +80,7 @@ async function main() {
       startDate: new Date(now.getFullYear(), now.getMonth(), 1),
       plannedEndDate: new Date(now.getFullYear(), now.getMonth() + 2, 28),
       clientId: clientAcme.id,
+      userId: user.id,
     },
   });
 
@@ -89,6 +93,7 @@ async function main() {
       startDate: new Date(now.getFullYear(), now.getMonth() - 1, 15),
       plannedEndDate: new Date(now.getFullYear(), now.getMonth(), 30),
       clientId: clientGlobex.id,
+      userId: user.id,
     },
   });
 
@@ -101,6 +106,7 @@ async function main() {
       startDate: new Date(now.getFullYear(), now.getMonth() + 1, 1),
       plannedEndDate: new Date(now.getFullYear(), now.getMonth() + 4, 15),
       clientId: clientStark.id,
+      userId: user.id,
     },
   });
 
@@ -119,6 +125,7 @@ async function main() {
       totalAmount: 5000.0,
       outstandingAmount: 0.0,
       clientId: clientAcme.id,
+      userId: user.id,
     },
   });
 
@@ -134,6 +141,7 @@ async function main() {
       totalAmount: 5000.0,
       outstandingAmount: 5000.0,
       clientId: clientAcme.id,
+      userId: user.id,
     },
   });
 
@@ -150,6 +158,7 @@ async function main() {
       totalAmount: 6500.0,
       outstandingAmount: 0.0,
       clientId: clientGlobex.id,
+      userId: user.id,
     },
   });
 
@@ -166,6 +175,7 @@ async function main() {
       status: 'Proposal Sent',
       pipelineValue: 12000.0,
       notes: 'Sent contract proposal draft. Parker wants high-speed photo upload capabilities.',
+      userId: user.id,
     },
   });
 
@@ -179,6 +189,7 @@ async function main() {
       status: 'Negotiating',
       pipelineValue: 18500.0,
       notes: 'Meeting next Tuesday to coordinate requirements constraints.',
+      userId: user.id,
     },
   });
 
@@ -191,6 +202,7 @@ async function main() {
       status: 'Prospect',
       pipelineValue: 4500.0,
       notes: 'Initial contact via contact page form. Auditing local discoverability.',
+      userId: user.id,
     },
   });
 
@@ -208,6 +220,7 @@ async function main() {
       status: 'Pending',
       notes: 'Coordinating checkout flow screens. Share screens on Figma.',
       clientId: clientAcme.id,
+      userId: user.id,
     },
   });
 
@@ -219,6 +232,7 @@ async function main() {
       status: 'Pending',
       notes: 'Requesting final approval signature on Scorpio recommendations.',
       clientId: clientGlobex.id,
+      userId: user.id,
     },
   });
 
@@ -230,6 +244,7 @@ async function main() {
       status: 'Pending',
       notes: 'Initial introduction call. Focus on reliability and dark-theme requirements.',
       clientId: clientStark.id,
+      userId: user.id,
     },
   });
 

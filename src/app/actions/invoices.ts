@@ -2,6 +2,7 @@
 'use server';
 
 import { db } from '@/lib/db';
+import { getSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
 
 interface InvoiceItem {
@@ -11,6 +12,11 @@ interface InvoiceItem {
 }
 
 export async function createInvoiceAction(formData: FormData, itemsJson: string) {
+  const session = await getSession();
+  if (!session) {
+    return { error: 'Unauthorized.' };
+  }
+
   const invoiceNumber = formData.get('invoiceNumber') as string;
   const clientId = formData.get('clientId') as string;
   const status = formData.get('status') as string || 'Draft';
@@ -26,13 +32,24 @@ export async function createInvoiceAction(formData: FormData, itemsJson: string)
   }
 
   try {
-    // Check if invoice number is unique
-    const existing = await db.invoice.findUnique({
-      where: { invoiceNumber },
+    // Verify client belongs to user
+    const client = await db.client.findFirst({
+      where: { id: clientId, userId: session.userId },
+    });
+    if (!client) {
+      return { error: 'Invalid client selection.' };
+    }
+
+    // Check if invoice number is unique for this user
+    const existing = await db.invoice.findFirst({
+      where: { 
+        userId: session.userId,
+        invoiceNumber,
+      },
     });
 
     if (existing) {
-      return { error: `Invoice number "${invoiceNumber}" is already in use.` };
+      return { error: `Invoice number "${invoiceNumber}" is already in use for your account.` };
     }
 
     // Calculate total amount based on items
@@ -56,6 +73,7 @@ export async function createInvoiceAction(formData: FormData, itemsJson: string)
         itemsJson,
         totalAmount,
         outstandingAmount,
+        userId: session.userId,
       },
     });
 
@@ -70,7 +88,19 @@ export async function createInvoiceAction(formData: FormData, itemsJson: string)
 }
 
 export async function markInvoiceAsPaidAction(id: string) {
+  const session = await getSession();
+  if (!session) {
+    return { error: 'Unauthorized.' };
+  }
+
   try {
+    const existing = await db.invoice.findFirst({
+      where: { id, userId: session.userId },
+    });
+    if (!existing) {
+      return { error: 'Unauthorized or Invoice not found.' };
+    }
+
     const invoice = await db.invoice.update({
       where: { id },
       data: {
@@ -90,11 +120,18 @@ export async function markInvoiceAsPaidAction(id: string) {
 }
 
 export async function deleteInvoiceAction(id: string) {
+  const session = await getSession();
+  if (!session) {
+    return { error: 'Unauthorized.' };
+  }
+
   try {
-    const invoice = await db.invoice.findUnique({
-      where: { id },
-      select: { clientId: true },
+    const existing = await db.invoice.findFirst({
+      where: { id, userId: session.userId },
     });
+    if (!existing) {
+      return { error: 'Unauthorized or Invoice not found.' };
+    }
 
     await db.invoice.delete({
       where: { id },
@@ -102,8 +139,8 @@ export async function deleteInvoiceAction(id: string) {
 
     revalidatePath('/invoices');
     revalidatePath('/clients');
-    if (invoice?.clientId) {
-      revalidatePath(`/clients/${invoice.clientId}`);
+    if (existing.clientId) {
+      revalidatePath(`/clients/${existing.clientId}`);
     }
     return { success: true };
   } catch (error) {

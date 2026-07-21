@@ -1,11 +1,21 @@
 import React from 'react';
 import { db } from '@/lib/db';
+import { getSession } from '@/lib/session';
+import { redirect } from 'next/navigation';
 import FollowUpsClient from './FollowUpsClient';
 
 export const dynamic = 'force-dynamic';
 
 export default async function FollowUpsPage() {
+  const session = await getSession();
+  if (!session) {
+    redirect('/login');
+  }
+
   const followUps = await db.followUp.findMany({
+    where: {
+      userId: session.userId,
+    },
     include: {
       client: true,
     },
@@ -15,6 +25,9 @@ export default async function FollowUpsPage() {
   });
 
   const clients = await db.client.findMany({
+    where: {
+      userId: session.userId,
+    },
     orderBy: {
       name: 'asc',
     },

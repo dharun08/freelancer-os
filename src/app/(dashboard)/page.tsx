@@ -26,14 +26,14 @@ export default async function DashboardPage() {
     redirect('/login');
   }
 
-  // 1. Fetch data concurrently
+  // 1. Fetch data concurrently scoped to authenticated user
   const [clients, projects, leads, invoices, followUps] = await Promise.all([
-    db.client.findMany(),
-    db.project.findMany({ include: { client: true } }),
-    db.lead.findMany(),
-    db.invoice.findMany({ include: { client: true } }),
+    db.client.findMany({ where: { userId: session.userId } }),
+    db.project.findMany({ where: { userId: session.userId }, include: { client: true } }),
+    db.lead.findMany({ where: { userId: session.userId } }),
+    db.invoice.findMany({ where: { userId: session.userId }, include: { client: true } }),
     db.followUp.findMany({ 
-      where: { status: 'Pending' },
+      where: { userId: session.userId, status: 'Pending' },
       include: { client: true },
       orderBy: { dueDate: 'asc' },
       take: 5
