@@ -69,12 +69,12 @@ export async function middleware(request: NextRequest) {
   }
 
   if (!session && !isAuthPage) {
-    const loginUrl = new URL('/login', request.url);
+    const loginUrl = new URL('/login', request.nextUrl);
     return NextResponse.redirect(loginUrl);
   }
 
   if (session && isAuthPage) {
-    const homeUrl = new URL('/', request.url);
+    const homeUrl = new URL('/', request.nextUrl);
     return NextResponse.redirect(homeUrl);
   }
 

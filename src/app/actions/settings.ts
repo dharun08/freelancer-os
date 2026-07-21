@@ -29,7 +29,7 @@ export async function updateProfileSettingsAction(formData: FormData) {
       },
     });
 
-    revalidatePath('/settings');
+    revalidatePath('/', 'layout');
     return { success: true, user };
   } catch (error) {
     console.error('Failed to update profile settings:', error);
@@ -61,7 +61,7 @@ export async function updatePreferencesAction(formData: FormData) {
       },
     });
 
-    revalidatePath('/settings');
+    revalidatePath('/', 'layout');
     return { success: true, user };
   } catch (error) {
     console.error('Failed to update preferences:', error);
