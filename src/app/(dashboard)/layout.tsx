@@ -1,5 +1,5 @@
 import React from 'react';
-import { getSession, deleteSession } from '@/lib/session';
+import { getSession } from '@/lib/session';
 import { db } from '@/lib/db';
 import { redirect } from 'next/navigation';
 import DashboardShell from '@/components/layout/DashboardShell';
@@ -25,8 +25,7 @@ export default async function DashboardLayout({
   });
 
   if (!user) {
-    await deleteSession();
-    redirect('/login');
+    redirect('/api/auth/clear-session');
   }
 
   return <DashboardShell user={user}>{children}</DashboardShell>;

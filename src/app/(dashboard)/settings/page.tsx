@@ -1,6 +1,6 @@
 import React from 'react';
 import { db } from '@/lib/db';
-import { getSession, deleteSession } from '@/lib/session';
+import { getSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
 import SettingsClient from './SettingsClient';
 
@@ -27,8 +27,7 @@ export default async function SettingsPage() {
   });
 
   if (!user) {
-    await deleteSession();
-    redirect('/login');
+    redirect('/api/auth/clear-session');
   }
 
   return (
