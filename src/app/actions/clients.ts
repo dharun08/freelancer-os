@@ -4,6 +4,7 @@
 import { db } from '@/lib/db';
 import { getSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
+import { isValidEmail, normalizeEmail } from '@/lib/validation';
 
 export async function createClientAction(formData: FormData) {
   const session = await getSession();
@@ -12,14 +13,19 @@ export async function createClientAction(formData: FormData) {
   }
 
   const name = formData.get('name') as string;
-  const email = formData.get('email') as string;
+  const emailInput = formData.get('email') as string || '';
   const phone = formData.get('phone') as string || null;
   const company = formData.get('company') as string || null;
   const status = formData.get('status') as string || 'Active';
   const notes = formData.get('notes') as string || null;
 
-  if (!name || !email) {
+  if (!name || !emailInput) {
     return { error: 'Name and email are required.' };
+  }
+
+  const email = normalizeEmail(emailInput);
+  if (!isValidEmail(email)) {
+    return { error: 'Please provide a valid email address.' };
   }
 
   try {
@@ -49,14 +55,19 @@ export async function updateClientAction(id: string, formData: FormData) {
   }
 
   const name = formData.get('name') as string;
-  const email = formData.get('email') as string;
+  const emailInput = formData.get('email') as string || '';
   const phone = formData.get('phone') as string || null;
   const company = formData.get('company') as string || null;
   const status = formData.get('status') as string;
   const notes = formData.get('notes') as string || null;
 
-  if (!name || !email) {
+  if (!name || !emailInput) {
     return { error: 'Name and email are required.' };
+  }
+
+  const email = normalizeEmail(emailInput);
+  if (!isValidEmail(email)) {
+    return { error: 'Please provide a valid email address.' };
   }
 
   try {

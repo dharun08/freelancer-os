@@ -4,6 +4,7 @@
 import { db } from '@/lib/db';
 import { getSession } from '@/lib/session';
 import { revalidatePath } from 'next/cache';
+import { isValidEmail, normalizeEmail } from '@/lib/validation';
 
 export async function createLeadAction(formData: FormData) {
   const session = await getSession();
@@ -13,15 +14,20 @@ export async function createLeadAction(formData: FormData) {
 
   const title = formData.get('title') as string;
   const contactName = formData.get('contactName') as string;
-  const email = formData.get('email') as string;
+  const emailInput = formData.get('email') as string || '';
   const phone = formData.get('phone') as string || null;
   const company = formData.get('company') as string || null;
   const status = formData.get('status') as string || 'Prospect';
   const pipelineValue = parseFloat(formData.get('pipelineValue') as string || '0.0');
   const notes = formData.get('notes') as string || null;
 
-  if (!title || !contactName || !email) {
+  if (!title || !contactName || !emailInput) {
     return { error: 'Title, contact name, and email are required.' };
+  }
+
+  const email = normalizeEmail(emailInput);
+  if (!isValidEmail(email)) {
+    return { error: 'Please provide a valid email address.' };
   }
 
   try {
@@ -80,15 +86,20 @@ export async function updateLeadAction(id: string, formData: FormData) {
 
   const title = formData.get('title') as string;
   const contactName = formData.get('contactName') as string;
-  const email = formData.get('email') as string;
+  const emailInput = formData.get('email') as string || '';
   const phone = formData.get('phone') as string || null;
   const company = formData.get('company') as string || null;
   const status = formData.get('status') as string;
   const pipelineValue = parseFloat(formData.get('pipelineValue') as string || '0.0');
   const notes = formData.get('notes') as string || null;
 
-  if (!title || !contactName || !email) {
+  if (!title || !contactName || !emailInput) {
     return { error: 'Title, contact name, and email are required.' };
+  }
+
+  const email = normalizeEmail(emailInput);
+  if (!isValidEmail(email)) {
+    return { error: 'Please provide a valid email address.' };
   }
 
   try {
@@ -165,16 +176,17 @@ export async function convertLeadToClientAction(id: string) {
     //    - Create Client
     //    - Update Lead Status to "Won" and set convertedAt
     const result = await db.$transaction(async (tx) => {
+      const normalizedEmail = normalizeEmail(lead.email);
       // Check if client with this email already exists
       let client = await tx.client.findFirst({
-        where: { email: lead.email, userId: session.userId },
+        where: { email: normalizedEmail, userId: session.userId },
       });
 
       if (!client) {
         client = await tx.client.create({
           data: {
             name: lead.contactName,
-            email: lead.email,
+            email: normalizedEmail,
             phone: lead.phone,
             company: lead.company,
             status: 'Active',

@@ -3,6 +3,7 @@
 
 import React, { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import DeleteConfirmationDialog from '@/components/ui/DeleteConfirmationDialog';
 import { 
   createProjectAction, 
   updateProjectAction, 
@@ -23,7 +24,8 @@ import {
   ArrowLeft,
   ChevronLeft,
   ChevronRight,
-  FolderKanban
+  FolderKanban,
+  ExternalLink
 } from 'lucide-react';
 
 interface Project {
@@ -66,11 +68,16 @@ export default function ProjectsClient({ initialProjects, clients }: ProjectsCli
   // Modals States
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [formError, setFormError] = useState('');
 
   const [createStatus, setCreateStatus] = useState('Planning');
   const [editStatus, setEditStatus] = useState('Planning');
+
+  // Delete dialog states
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
 
   // Calendar specific states
   const [calendarDate, setCalendarDate] = useState(new Date());
@@ -117,12 +124,19 @@ export default function ProjectsClient({ initialProjects, clients }: ProjectsCli
   };
 
   const handleDeleteProject = (id: string) => {
-    if (!confirm('Are you sure you want to delete this project? This will delete associated data.')) return;
+    setProjectToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDeleteProject = async () => {
+    if (!projectToDelete) return;
     startTransition(async () => {
-      const result = await deleteProjectAction(id);
+      const result = await deleteProjectAction(projectToDelete);
       if (result.error) {
         alert(result.error);
       } else {
+        setDeleteDialogOpen(false);
+        setProjectToDelete(null);
         router.refresh();
       }
     });
@@ -147,7 +161,7 @@ export default function ProjectsClient({ initialProjects, clients }: ProjectsCli
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
   };
 
   const getStatusColor = (status: string) => {
@@ -306,7 +320,15 @@ export default function ProjectsClient({ initialProjects, clients }: ProjectsCli
                         key={project.id} 
                         className="bg-card border border-border hover:border-primary/45 rounded-xl p-4 shadow-sm hover:shadow-md transition-all group relative"
                       >
-                        <h4 className="font-bold text-sm text-foreground line-clamp-1">{project.name}</h4>
+                        <button
+                          onClick={() => {
+                            setSelectedProject(project);
+                            setViewModalOpen(true);
+                          }}
+                          className="font-bold text-sm text-foreground hover:text-primary transition-colors text-left line-clamp-1 cursor-pointer block w-full"
+                        >
+                          {project.name}
+                        </button>
                         
                         <div className="flex items-center text-[10px] text-muted-foreground mt-1.5">
                           <Building className="h-3 w-3 mr-1 text-slate-400 shrink-0" />
@@ -400,9 +422,15 @@ export default function ProjectsClient({ initialProjects, clients }: ProjectsCli
                   <div key={project.id} className="grid grid-cols-12 py-4 items-center group">
                     {/* Column 1-4: Details */}
                     <div className="col-span-4 pr-4">
-                      <div className="font-semibold text-sm group-hover:text-primary transition-colors truncate">
+                      <button
+                        onClick={() => {
+                          setSelectedProject(project);
+                          setViewModalOpen(true);
+                        }}
+                        className="font-semibold text-sm hover:text-primary transition-colors truncate text-left cursor-pointer w-full block"
+                      >
                         {project.name}
-                      </div>
+                      </button>
                       <div className="text-xs text-slate-400 flex items-center mt-0.5 truncate">
                         <Building className="h-3 w-3 mr-1 text-slate-500 shrink-0" />
                         <span>{project.client.name}</span>
@@ -556,18 +584,22 @@ export default function ProjectsClient({ initialProjects, clients }: ProjectsCli
                       const isStart = start && start.toDateString() === day.toDateString();
                       
                       return (
-                        <div
+                        <button
                           key={p.id}
-                          className={`text-[9px] font-bold px-1.5 py-0.5 rounded truncate border ${
+                          onClick={() => {
+                            setSelectedProject(p);
+                            setViewModalOpen(true);
+                          }}
+                          className={`w-full text-left text-[9px] font-bold px-1.5 py-0.5 rounded truncate border cursor-pointer block ${
                             isStart 
-                              ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300 border-indigo-200' 
-                              : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200'
+                              ? 'bg-indigo-100 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300 border-indigo-200 hover:border-indigo-400' 
+                              : 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 hover:border-emerald-400'
                           }`}
                           title={`${p.name} (${isStart ? 'Starts' : 'Ends'})`}
                         >
                           {isStart ? '▶ ' : '■ '}
                           {p.name}
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
@@ -887,6 +919,137 @@ export default function ProjectsClient({ initialProjects, clients }: ProjectsCli
           </div>
         </div>
       )}
+
+      {/* VIEW DETAILS MODAL */}
+      {viewModalOpen && selectedProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+          <div className="bg-card border border-border w-full max-w-lg rounded-2xl shadow-2xl p-6 relative animate-in fade-in zoom-in-95 duration-150">
+            <button
+              onClick={() => {
+                setViewModalOpen(false);
+                setSelectedProject(null);
+              }}
+              className="absolute top-4 right-4 p-1.5 hover:bg-muted rounded-lg text-muted-foreground cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <h2 className="text-xl font-bold mb-1 text-foreground">Project Details</h2>
+            <p className="text-xs text-muted-foreground mb-4">View information about the selected project opportunity</p>
+
+            <div className="space-y-4">
+              <div className="border-b border-border pb-3">
+                <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Project Title Opportunity
+                </span>
+                <span className="text-base font-bold text-foreground">{selectedProject.name}</span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 border-b border-border pb-3">
+                <div>
+                  <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                    Linked Client
+                  </span>
+                  <span className="text-sm font-semibold text-foreground flex items-center">
+                    <Building className="h-3.5 w-3.5 mr-1 text-slate-400 shrink-0" />
+                    {selectedProject.client.name}
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                    Status
+                  </span>
+                  <span className={`inline-flex text-xs px-2.5 py-0.5 rounded-full border font-semibold ${getStatusColor(selectedProject.status)}`}>
+                    {selectedProject.status}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 border-b border-border pb-3">
+                <div>
+                  <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                    Budget
+                  </span>
+                  <span className="text-sm font-bold text-primary">{formatCurrency(selectedProject.budget)}</span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                    Start Date
+                  </span>
+                  <span className="text-sm text-foreground font-medium">
+                    {selectedProject.startDate ? new Date(selectedProject.startDate).toLocaleDateString() : 'N/A'}
+                  </span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 border-b border-border pb-3">
+                <div>
+                  <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                    Planned End Date
+                  </span>
+                  <span className="text-sm text-foreground font-medium">
+                    {selectedProject.plannedEndDate ? new Date(selectedProject.plannedEndDate).toLocaleDateString() : 'N/A'}
+                  </span>
+                </div>
+                <div>
+                  <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                    Actual End Date
+                  </span>
+                  <span className="text-sm text-foreground font-medium">
+                    {selectedProject.actualEndDate ? new Date(selectedProject.actualEndDate).toLocaleDateString() : 'Ongoing'}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <span className="block text-[10px] font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Description / Milestones
+                </span>
+                <div className="text-sm text-muted-foreground bg-muted/40 border border-border/80 rounded-xl p-3 max-h-[150px] overflow-y-auto whitespace-pre-wrap leading-relaxed">
+                  {selectedProject.description || 'No description or milestones provided.'}
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewModalOpen(false);
+                    setSelectedProject(null);
+                  }}
+                  className="px-4 py-2 border border-border rounded-xl text-sm font-semibold hover:bg-muted text-foreground cursor-pointer transition-colors duration-200"
+                >
+                  Close
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setViewModalOpen(false);
+                    setEditStatus(selectedProject.status);
+                    setEditModalOpen(true);
+                  }}
+                  className="flex items-center space-x-1.5 bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-semibold hover:bg-primary/95 cursor-pointer transition-colors duration-200"
+                >
+                  <Edit2 className="h-3.5 w-3.5" />
+                  <span>Edit Project</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      <DeleteConfirmationDialog
+        isOpen={deleteDialogOpen}
+        title="Delete Project?"
+        description="Are you sure you want to delete this project? This will permanently delete associated project data."
+        isPending={isPending}
+        onConfirm={handleConfirmDeleteProject}
+        onCancel={() => {
+          setDeleteDialogOpen(false);
+          setProjectToDelete(null);
+        }}
+      />
     </div>
   );
 }

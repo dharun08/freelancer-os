@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useTransition } from 'react';
+import DeleteConfirmationDialog from '@/components/ui/DeleteConfirmationDialog';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
@@ -623,37 +624,17 @@ export default function ClientsClient({ initialClients }: ClientsClientProps) {
       )}
 
       {/* DELETE CONFIRMATION MODAL */}
-      {deleteModalOpen && selectedClient && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
-          <div className="bg-card border border-border w-full max-w-md rounded-2xl shadow-2xl p-6 relative animate-in fade-in zoom-in-95 duration-150">
-            <h2 className="text-xl font-bold mb-2">Delete Client?</h2>
-            <p className="text-muted-foreground text-sm mb-6">
-              Are you sure you want to delete <strong className="text-foreground">{selectedClient.name}</strong>? This action is permanent and will delete all associated projects, invoices, and follow-ups.
-            </p>
-            
-            <div className="flex justify-end space-x-3">
-              <button
-                onClick={() => {
-                  setDeleteModalOpen(false);
-                  setSelectedClient(null);
-                }}
-                className="px-4 py-2 border border-border rounded-xl text-sm hover:bg-muted cursor-pointer"
-                disabled={isPending}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteClient}
-                disabled={isPending}
-                className="flex items-center space-x-1.5 bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-xl text-sm font-semibold disabled:opacity-60 cursor-pointer"
-              >
-                {isPending && <Loader2 className="h-4.5 w-4.5 animate-spin" />}
-                <span>Delete</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeleteConfirmationDialog
+        isOpen={deleteModalOpen && !!selectedClient}
+        title="Delete Client?"
+        description={`Are you sure you want to delete ${selectedClient?.name || 'this client'}? This action is permanent and will delete all associated projects, invoices, and follow-ups.`}
+        isPending={isPending}
+        onConfirm={handleDeleteClient}
+        onCancel={() => {
+          setDeleteModalOpen(false);
+          setSelectedClient(null);
+        }}
+      />
     </div>
   );
 }

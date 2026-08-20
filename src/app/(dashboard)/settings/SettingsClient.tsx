@@ -215,16 +215,13 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                   </label>
                   <select
                     name="currency"
-                    defaultValue={user.currency}
-                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground"
+                    value="INR"
+                    disabled
+                    className="w-full px-3 py-2 bg-muted border border-border rounded-xl text-sm text-muted-foreground cursor-not-allowed font-medium"
                   >
-                    <option value="USD">USD ($)</option>
-                    <option value="EUR">EUR (€)</option>
-                    <option value="GBP">GBP (£)</option>
                     <option value="INR">INR (₹)</option>
-                    <option value="CAD">CAD ($)</option>
-                    <option value="AUD">AUD ($)</option>
                   </select>
+                  <input type="hidden" name="currency" value="INR" />
                 </div>
 
                 <div>

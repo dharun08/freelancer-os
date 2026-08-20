@@ -17,10 +17,20 @@ export async function createFollowUpAction(formData: FormData) {
   const clientId = formData.get('clientId') as string;
   
   const dueDateStr = formData.get('dueDate') as string;
-  const dueDate = dueDateStr ? new Date(dueDateStr) : new Date();
 
   if (!title || !clientId || !dueDateStr) {
     return { error: 'Title, client, and due date are required.' };
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const dueDate = new Date(dueDateStr);
+  const compareDate = new Date(dueDate);
+  compareDate.setHours(0, 0, 0, 0);
+
+  if (compareDate < today) {
+    return { error: 'Follow-up date cannot be in the past.' };
   }
 
   try {
@@ -51,6 +61,76 @@ export async function createFollowUpAction(formData: FormData) {
   } catch (error) {
     console.error('Failed to create follow up:', error);
     return { error: 'Something went wrong while creating the follow-up.' };
+  }
+}
+
+export async function updateFollowUpAction(id: string, formData: FormData) {
+  const session = await getSession();
+  if (!session) {
+    return { error: 'Unauthorized.' };
+  }
+
+  const title = formData.get('title') as string;
+  const type = formData.get('type') as string || 'Email';
+  const notes = formData.get('notes') as string || null;
+  const clientId = formData.get('clientId') as string;
+  const status = formData.get('status') as string || 'Pending';
+  
+  const dueDateStr = formData.get('dueDate') as string;
+
+  if (!title || !clientId || !dueDateStr) {
+    return { error: 'Title, client, and due date are required.' };
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const dueDate = new Date(dueDateStr);
+  const compareDate = new Date(dueDate);
+  compareDate.setHours(0, 0, 0, 0);
+
+  if (compareDate < today) {
+    return { error: 'Follow-up date cannot be in the past.' };
+  }
+
+  try {
+    const existing = await db.followUp.findFirst({
+      where: { id, userId: session.userId },
+    });
+    if (!existing) {
+      return { error: 'Unauthorized or Follow-up not found.' };
+    }
+
+    // Verify client belongs to user
+    const client = await db.client.findFirst({
+      where: { id: clientId, userId: session.userId },
+    });
+    if (!client) {
+      return { error: 'Invalid client selection.' };
+    }
+
+    const followUp = await db.followUp.update({
+      where: { id },
+      data: {
+        title,
+        type,
+        dueDate,
+        status,
+        notes,
+        clientId,
+      },
+    });
+
+    revalidatePath('/follow-ups');
+    revalidatePath('/clients');
+    revalidatePath(`/clients/${clientId}`);
+    if (existing.clientId !== clientId) {
+      revalidatePath(`/clients/${existing.clientId}`);
+    }
+    return { success: true, followUp };
+  } catch (error) {
+    console.error('Failed to update follow up:', error);
+    return { error: 'Something went wrong while updating the follow-up.' };
   }
 }
 

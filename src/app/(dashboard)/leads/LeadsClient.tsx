@@ -1,8 +1,9 @@
 'use strict';
 'use client';
 
-import React, { useState, useTransition } from 'react';
+import React, { useState, useTransition, useOptimistic } from 'react';
 import { useRouter } from 'next/navigation';
+import DeleteConfirmationDialog from '@/components/ui/DeleteConfirmationDialog';
 import { 
   createLeadAction, 
   updateLeadAction, 
@@ -25,7 +26,8 @@ import {
   Loader2,
   X,
   ArrowRight,
-  ArrowLeft
+  ArrowLeft,
+  PlusCircle
 } from 'lucide-react';
 
 interface Lead {
@@ -58,19 +60,33 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
   const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
   const [formError, setFormError] = useState('');
 
+  // Delete modal state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [leadToDelete, setLeadToDelete] = useState<string | null>(null);
+
+  // Optimistic UI for stage movement
+  const [optimisticLeads, setOptimisticLeads] = useOptimistic(
+    initialLeads,
+    (state, update: { id: string; newStatus: string }) => {
+      return state.map((lead) =>
+        lead.id === update.id ? { ...lead, status: update.newStatus } : lead
+      );
+    }
+  );
+
   // 1. Calculate Metrics
-  const activeLeads = initialLeads.filter(l => ['Prospect', 'Contacted', 'Proposal Sent', 'Negotiating'].includes(l.status));
+  const activeLeads = optimisticLeads.filter(l => ['Prospect', 'Contacted', 'Proposal Sent', 'Negotiating'].includes(l.status));
   const totalPipelineValue = activeLeads.reduce((sum, l) => sum + l.pipelineValue, 0);
   
-  const wonDeals = initialLeads.filter(l => l.status === 'Won').length;
-  const lostDeals = initialLeads.filter(l => l.status === 'Lost').length;
+  const wonDeals = optimisticLeads.filter(l => l.status === 'Won').length;
+  const lostDeals = optimisticLeads.filter(l => l.status === 'Lost').length;
   
   const totalClosed = wonDeals + lostDeals;
   const conversionRate = totalClosed > 0 ? Math.round((wonDeals / totalClosed) * 100) : 0;
 
   // 2. Column Grouping
   const leadsByStage = STAGES.reduce((acc, stage) => {
-    acc[stage] = initialLeads.filter(l => l.status === stage);
+    acc[stage] = optimisticLeads.filter(l => l.status === stage);
     return acc;
   }, {} as Record<string, Lead[]>);
 
@@ -110,12 +126,19 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
   };
 
   const handleDeleteLead = (id: string) => {
-    if (!confirm('Are you sure you want to delete this lead?')) return;
+    setLeadToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDeleteLead = async () => {
+    if (!leadToDelete) return;
     startTransition(async () => {
-      const result = await deleteLeadAction(id);
+      const result = await deleteLeadAction(leadToDelete);
       if (result.error) {
         alert(result.error);
       } else {
+        setDeleteDialogOpen(false);
+        setLeadToDelete(null);
         router.refresh();
       }
     });
@@ -132,8 +155,13 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
     }
 
     if (newIndex !== currentIndex) {
+      const newStatus = STAGES[newIndex];
       startTransition(async () => {
-        await updateLeadStatusAction(id, STAGES[newIndex]);
+        setOptimisticLeads({ id, newStatus });
+        const result = await updateLeadStatusAction(id, newStatus);
+        if (result && result.error) {
+          alert(result.error);
+        }
         router.refresh();
       });
     }
@@ -152,7 +180,7 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
   };
 
   return (
@@ -626,6 +654,18 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
           </div>
         </div>
       )}
+      {/* DELETE CONFIRMATION MODAL */}
+      <DeleteConfirmationDialog
+        isOpen={deleteDialogOpen}
+        title="Delete Lead?"
+        description="Are you sure you want to delete this lead? This action is permanent and cannot be undone."
+        isPending={isPending}
+        onConfirm={handleConfirmDeleteLead}
+        onCancel={() => {
+          setDeleteDialogOpen(false);
+          setLeadToDelete(null);
+        }}
+      />
     </div>
   );
 }

@@ -1,9 +1,14 @@
-'use strict';
 'use client';
 
 import React, { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { createFollowUpAction, completeFollowUpAction, deleteFollowUpAction } from '@/app/actions/followups';
+import DeleteConfirmationDialog from '@/components/ui/DeleteConfirmationDialog';
+import { 
+  createFollowUpAction, 
+  updateFollowUpAction,
+  completeFollowUpAction, 
+  deleteFollowUpAction 
+} from '@/app/actions/followups';
 import { 
   Plus, 
   Trash2, 
@@ -17,7 +22,8 @@ import {
   Clock,
   X,
   Loader2,
-  BellRing
+  BellRing,
+  Edit2
 } from 'lucide-react';
 
 interface FollowUp {
@@ -57,7 +63,13 @@ export default function FollowUpsClient({ initialFollowUps, clients }: FollowUps
   
   // Modals
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedFollowUp, setSelectedFollowUp] = useState<FollowUp | null>(null);
   const [formError, setFormError] = useState('');
+
+  // Delete modal state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [followUpToDelete, setFollowUpToDelete] = useState<string | null>(null);
 
   // Date constants for filter logic
   const now = new Date();
@@ -111,12 +123,37 @@ export default function FollowUpsClient({ initialFollowUps, clients }: FollowUps
   };
 
   const handleDeleteFollowUp = (id: string) => {
-    if (!confirm('Are you sure you want to delete this reminder?')) return;
+    setFollowUpToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDeleteFollowUp = async () => {
+    if (!followUpToDelete) return;
     startTransition(async () => {
-      const result = await deleteFollowUpAction(id);
+      const result = await deleteFollowUpAction(followUpToDelete);
       if (result.error) {
         alert(result.error);
       } else {
+        setDeleteDialogOpen(false);
+        setFollowUpToDelete(null);
+        router.refresh();
+      }
+    });
+  };
+
+  const handleEditFollowUp = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!selectedFollowUp) return;
+    setFormError('');
+    const formData = new FormData(e.currentTarget);
+
+    startTransition(async () => {
+      const result = await updateFollowUpAction(selectedFollowUp.id, formData);
+      if (result.error) {
+        setFormError(result.error);
+      } else {
+        setEditModalOpen(false);
+        setSelectedFollowUp(null);
         router.refresh();
       }
     });
@@ -299,6 +336,17 @@ export default function FollowUpsClient({ initialFollowUps, clients }: FollowUps
                   </button>
                 )}
                 <button
+                  onClick={() => {
+                    setSelectedFollowUp(f);
+                    setFormError('');
+                    setEditModalOpen(true);
+                  }}
+                  className="p-1.5 rounded-xl text-slate-400 hover:text-foreground hover:bg-muted cursor-pointer border border-transparent"
+                  title="Edit Reminder"
+                >
+                  <Edit2 className="h-4 w-4" />
+                </button>
+                <button
                   onClick={() => handleDeleteFollowUp(f.id)}
                   className="p-1.5 rounded-xl text-slate-400 hover:text-red-500 hover:bg-red-500/10 cursor-pointer border border-transparent hover:border-red-500/10"
                   title="Delete Reminder"
@@ -386,6 +434,10 @@ export default function FollowUpsClient({ initialFollowUps, clients }: FollowUps
                     type="datetime-local"
                     name="dueDate"
                     required
+                    min={(() => {
+                      const tzOffset = new Date().getTimezoneOffset() * 60000;
+                      return (new Date(Date.now() - tzOffset)).toISOString().slice(0, 16);
+                    })()}
                     className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground"
                   />
                 </div>
@@ -424,6 +476,162 @@ export default function FollowUpsClient({ initialFollowUps, clients }: FollowUps
           </div>
         </div>
       )}
+
+      {/* EDIT MODAL */}
+      {editModalOpen && selectedFollowUp && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+          <div className="bg-card border border-border w-full max-w-lg rounded-2xl shadow-2xl p-6 relative animate-in fade-in zoom-in-95 duration-150">
+            <button
+              onClick={() => {
+                setEditModalOpen(false);
+                setSelectedFollowUp(null);
+              }}
+              className="absolute top-4 right-4 p-1.5 hover:bg-muted rounded-lg text-muted-foreground cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <h2 className="text-xl font-bold mb-4">Edit Follow-Up Reminder</h2>
+
+            <form onSubmit={handleEditFollowUp} className="space-y-4">
+              {formError && (
+                <div className="p-3 bg-red-950/50 border border-red-800/80 rounded-lg text-sm text-red-200">
+                  {formError}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Reminder Title / Action *
+                </label>
+                <input
+                  type="text"
+                  name="title"
+                  required
+                  defaultValue={selectedFollowUp.title}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Select Client *
+                </label>
+                <select
+                  name="clientId"
+                  required
+                  defaultValue={selectedFollowUp.clientId}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground"
+                >
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} {c.company ? `(${c.company})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                    Outreach Medium
+                  </label>
+                  <select
+                    name="type"
+                    defaultValue={selectedFollowUp.type}
+                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground"
+                  >
+                    <option value="Email">Email</option>
+                    <option value="Call">Call</option>
+                    <option value="Meeting">Meeting</option>
+                    <option value="LinkedIn">LinkedIn</option>
+                    <option value="WhatsApp">WhatsApp</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                    Due Date & Time *
+                  </label>
+                  <input
+                    type="datetime-local"
+                    name="dueDate"
+                    required
+                    min={(() => {
+                      const tzOffset = new Date().getTimezoneOffset() * 60000;
+                      return (new Date(Date.now() - tzOffset)).toISOString().slice(0, 16);
+                    })()}
+                    defaultValue={selectedFollowUp.dueDate ? (() => {
+                      const date = new Date(selectedFollowUp.dueDate);
+                      const tzOffset = date.getTimezoneOffset() * 60000;
+                      return (new Date(date.getTime() - tzOffset)).toISOString().slice(0, 16);
+                    })() : ''}
+                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Status
+                </label>
+                <select
+                  name="status"
+                  defaultValue={selectedFollowUp.status}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground"
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Completed">Completed</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                  Notes / Context
+                </label>
+                <textarea
+                  name="notes"
+                  rows={3}
+                  defaultValue={selectedFollowUp.notes || ''}
+                  className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 resize-none"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditModalOpen(false);
+                    setSelectedFollowUp(null);
+                  }}
+                  className="px-4 py-2 border border-border rounded-xl text-sm hover:bg-muted cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isPending}
+                  className="flex items-center space-x-1.5 bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-semibold hover:bg-primary/95 disabled:opacity-60 cursor-pointer"
+                >
+                  {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  <span>Save Changes</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      <DeleteConfirmationDialog
+        isOpen={deleteDialogOpen}
+        title="Delete Reminder?"
+        description="Are you sure you want to delete this follow-up reminder? This action is permanent."
+        isPending={isPending}
+        onConfirm={handleConfirmDeleteFollowUp}
+        onCancel={() => {
+          setDeleteDialogOpen(false);
+          setFollowUpToDelete(null);
+        }}
+      />
     </div>
   );
 }

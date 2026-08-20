@@ -1,10 +1,14 @@
-'use strict';
-
 'use client';
 
 import React, { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { createInvoiceAction, markInvoiceAsPaidAction, deleteInvoiceAction } from '@/app/actions/invoices';
+import DeleteConfirmationDialog from '@/components/ui/DeleteConfirmationDialog';
+import { 
+  createInvoiceAction, 
+  updateInvoiceAction,
+  markInvoiceAsPaidAction, 
+  deleteInvoiceAction 
+} from '@/app/actions/invoices';
 import { 
   Plus, 
   Search, 
@@ -18,7 +22,8 @@ import {
   PlusCircle,
   MinusCircle,
   Loader2,
-  Receipt
+  Receipt,
+  Edit2
 } from 'lucide-react';
 
 interface Invoice {
@@ -65,6 +70,8 @@ export default function InvoicesClient({ initialInvoices, clients }: InvoicesCli
 
   // Modals States
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
   const [formError, setFormError] = useState('');
 
   // Itemized Input list state
@@ -75,11 +82,14 @@ export default function InvoicesClient({ initialInvoices, clients }: InvoicesCli
   // Generated Invoice number state
   const [nextInvoiceNumber, setNextInvoiceNumber] = useState('');
 
+  // Delete modal state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [invoiceToDelete, setInvoiceToDelete] = useState<string | null>(null);
+
   useEffect(() => {
     if (createModalOpen) {
-      // Generate a unique invoice number default
-      const randomId = Math.floor(1000 + Math.random() * 9000);
-      setNextInvoiceNumber(`INV-2026-${randomId}`);
+      // Set to auto-generated default
+      setNextInvoiceNumber('(Auto-generated)');
       setInvoiceItems([{ description: '', quantity: 1, rate: 0.0 }]);
     }
   }, [createModalOpen]);
@@ -97,7 +107,7 @@ export default function InvoicesClient({ initialInvoices, clients }: InvoicesCli
       (inv.client.company && inv.client.company.toLowerCase().includes(searchTerm.toLowerCase()));
     
     // Auto calculate if overdue
-    const isOverdue = inv.status !== 'Paid' && new Date(inv.dueDate) < new Date();
+    const isOverdue = inv.status !== 'Paid' && new Date(inv.dueDate).setHours(0,0,0,0) < new Date().setHours(0,0,0,0);
     
     let matchesStatus = true;
     if (statusFilter !== 'All') {
@@ -171,12 +181,43 @@ export default function InvoicesClient({ initialInvoices, clients }: InvoicesCli
   };
 
   const handleDeleteInvoice = (id: string) => {
-    if (!confirm('Are you sure you want to delete this invoice?')) return;
+    setInvoiceToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDeleteInvoice = async () => {
+    if (!invoiceToDelete) return;
     startTransition(async () => {
-      const result = await deleteInvoiceAction(id);
+      const result = await deleteInvoiceAction(invoiceToDelete);
       if (result.error) {
         alert(result.error);
       } else {
+        setDeleteDialogOpen(false);
+        setInvoiceToDelete(null);
+        router.refresh();
+      }
+    });
+  };
+
+  const handleEditInvoice = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!selectedInvoice) return;
+    setFormError('');
+    const formData = new FormData(e.currentTarget);
+
+    const hasEmptyItem = invoiceItems.some(i => !i.description.trim());
+    if (hasEmptyItem) {
+      setFormError('Please fill in descriptions for all invoice items.');
+      return;
+    }
+
+    startTransition(async () => {
+      const result = await updateInvoiceAction(selectedInvoice.id, formData, JSON.stringify(invoiceItems));
+      if (result.error) {
+        setFormError(result.error);
+      } else {
+        setEditModalOpen(false);
+        setSelectedInvoice(null);
         router.refresh();
       }
     });
@@ -186,7 +227,7 @@ export default function InvoicesClient({ initialInvoices, clients }: InvoicesCli
   const invoiceSubtotal = invoiceItems.reduce((sum, item) => sum + (item.quantity * item.rate), 0);
 
   const getStatusBadge = (inv: Invoice) => {
-    const isOverdue = inv.status !== 'Paid' && new Date(inv.dueDate) < new Date();
+    const isOverdue = inv.status !== 'Paid' && new Date(inv.dueDate).setHours(0,0,0,0) < new Date().setHours(0,0,0,0);
     
     if (isOverdue) {
       return (
@@ -221,7 +262,7 @@ export default function InvoicesClient({ initialInvoices, clients }: InvoicesCli
   };
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
   };
 
   return (
@@ -370,6 +411,18 @@ export default function InvoicesClient({ initialInvoices, clients }: InvoicesCli
                           </button>
                         )}
                         <button
+                          onClick={() => {
+                            setSelectedInvoice(invoice);
+                            setInvoiceItems(JSON.parse(invoice.itemsJson));
+                            setFormError('');
+                            setEditModalOpen(true);
+                          }}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-foreground hover:bg-muted cursor-pointer"
+                          title="Edit Invoice"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button
                           onClick={() => handleDeleteInvoice(invoice.id)}
                           className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-500/10 cursor-pointer"
                           title="Delete Invoice"
@@ -413,10 +466,9 @@ export default function InvoicesClient({ initialInvoices, clients }: InvoicesCli
                   <input
                     type="text"
                     name="invoiceNumber"
-                    required
+                    readOnly
                     value={nextInvoiceNumber}
-                    onChange={(e) => setNextInvoiceNumber(e.target.value)}
-                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 font-mono"
+                    className="w-full px-3 py-2 bg-muted border border-border rounded-xl text-sm text-muted-foreground font-mono cursor-not-allowed"
                   />
                 </div>
                 <div>
@@ -567,6 +619,210 @@ export default function InvoicesClient({ initialInvoices, clients }: InvoicesCli
           </div>
         </div>
       )}
+
+      {/* EDIT MODAL */}
+      {editModalOpen && selectedInvoice && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm overflow-y-auto">
+          <div className="bg-card border border-border w-full max-w-2xl rounded-2xl shadow-2xl p-6 relative my-8 animate-in fade-in zoom-in-95 duration-150">
+            <button
+              onClick={() => {
+                setEditModalOpen(false);
+                setSelectedInvoice(null);
+              }}
+              className="absolute top-4 right-4 p-1.5 hover:bg-muted rounded-lg text-muted-foreground cursor-pointer"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            <h2 className="text-xl font-bold mb-4">Edit Invoice</h2>
+
+            <form onSubmit={handleEditInvoice} className="space-y-4">
+              {formError && (
+                <div className="p-3 bg-red-950/50 border border-red-800/80 rounded-lg text-sm text-red-200">
+                  {formError}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                    Invoice Number
+                  </label>
+                  <input
+                    type="text"
+                    name="invoiceNumber"
+                    readOnly
+                    value={selectedInvoice.invoiceNumber}
+                    className="w-full px-3 py-2 bg-muted border border-border rounded-xl text-sm text-muted-foreground font-mono cursor-not-allowed"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                    Bill To Client *
+                  </label>
+                  <select
+                    name="clientId"
+                    required
+                    defaultValue={selectedInvoice.clientId}
+                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground"
+                  >
+                    {clients.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} {c.company ? `(${c.company})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                    Issue Date
+                  </label>
+                  <input
+                    type="date"
+                    name="issueDate"
+                    defaultValue={selectedInvoice.issueDate ? new Date(selectedInvoice.issueDate).toISOString().split('T')[0] : ''}
+                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                    Due Date *
+                  </label>
+                  <input
+                    type="date"
+                    name="dueDate"
+                    required
+                    defaultValue={selectedInvoice.dueDate ? new Date(selectedInvoice.dueDate).toISOString().split('T')[0] : ''}
+                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
+                    Status
+                  </label>
+                  <select
+                    name="status"
+                    defaultValue={selectedInvoice.status}
+                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground"
+                  >
+                    <option value="Draft">Draft</option>
+                    <option value="Sent">Sent</option>
+                    <option value="Paid">Paid</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Dynamic Line Items Section */}
+              <div className="space-y-3 pt-2">
+                <div className="flex items-center justify-between border-b border-border pb-1">
+                  <h3 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Itemized Details</h3>
+                  <button
+                    type="button"
+                    onClick={handleAddItem}
+                    className="text-xs text-primary flex items-center space-x-1 hover:underline cursor-pointer"
+                  >
+                    <PlusCircle className="h-3.5 w-3.5" />
+                    <span>Add Item</span>
+                  </button>
+                </div>
+
+                <div className="max-h-[160px] overflow-y-auto space-y-2 pr-1">
+                  {invoiceItems.map((item, index) => (
+                    <div key={index} className="flex items-center space-x-2">
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          placeholder="Item Description"
+                          value={item.description}
+                          onChange={(e) => handleUpdateItem(index, 'description', e.target.value)}
+                          className="w-full px-2.5 py-1.5 bg-background border border-border rounded-lg text-xs text-foreground focus:outline-none"
+                          required
+                        />
+                      </div>
+                      <div className="w-16">
+                        <input
+                          type="number"
+                          placeholder="Qty"
+                          min="1"
+                          value={item.quantity}
+                          onChange={(e) => handleUpdateItem(index, 'quantity', e.target.value)}
+                          className="w-full px-2.5 py-1.5 bg-background border border-border rounded-lg text-xs text-foreground focus:outline-none"
+                          required
+                        />
+                      </div>
+                      <div className="w-24">
+                        <input
+                          type="number"
+                          placeholder="Rate"
+                          step="0.01"
+                          min="0"
+                          value={item.rate}
+                          onChange={(e) => handleUpdateItem(index, 'rate', e.target.value)}
+                          className="w-full px-2.5 py-1.5 bg-background border border-border rounded-lg text-xs text-foreground focus:outline-none"
+                          required
+                        />
+                      </div>
+                      <div className="w-20 text-right text-xs font-bold text-slate-500">
+                        {formatCurrency(item.quantity * item.rate)}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveItem(index)}
+                        disabled={invoiceItems.length === 1}
+                        className="text-slate-400 hover:text-red-500 disabled:opacity-30 cursor-pointer"
+                      >
+                        <MinusCircle className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Subtotal summary display */}
+              <div className="border-t border-border pt-4 flex justify-between items-center bg-muted/30 p-4 rounded-xl">
+                <span className="text-sm font-semibold text-muted-foreground">Total Invoice Value:</span>
+                <span className="text-lg font-bold text-foreground">{formatCurrency(invoiceSubtotal)}</span>
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setEditModalOpen(false);
+                    setSelectedInvoice(null);
+                  }}
+                  className="px-4 py-2 border border-border rounded-xl text-sm hover:bg-muted cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isPending}
+                  className="flex items-center space-x-1.5 bg-primary text-primary-foreground px-4 py-2 rounded-xl text-sm font-semibold hover:bg-primary/95 disabled:opacity-60 cursor-pointer"
+                >
+                  {isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  <span>Save Changes</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* DELETE CONFIRMATION MODAL */}
+      <DeleteConfirmationDialog
+        isOpen={deleteDialogOpen}
+        title="Delete Invoice?"
+        description="Are you sure you want to delete this invoice? This will permanently delete this invoice record."
+        isPending={isPending}
+        onConfirm={handleConfirmDeleteInvoice}
+        onCancel={() => {
+          setDeleteDialogOpen(false);
+          setInvoiceToDelete(null);
+        }}
+      />
     </div>
   );
 }
