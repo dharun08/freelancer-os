@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { db } from '@/lib/db';
 import { getSession } from '@/lib/session';
 import { redirect } from 'next/navigation';
+import { formatCurrency } from '@/lib/currency';
 import { 
   Users, 
   FolderKanban, 
@@ -73,10 +74,6 @@ export default async function DashboardPage() {
   const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
   const followUpsDueCount = followUps.filter(f => new Date(f.dueDate) <= todayEnd).length;
 
-  // 3. Formatter
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
-  };
 
   return (
     <div className="space-y-8 font-sans">

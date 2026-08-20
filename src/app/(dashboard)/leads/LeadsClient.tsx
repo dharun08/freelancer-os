@@ -1,9 +1,9 @@
-'use strict';
 'use client';
 
 import React, { useState, useTransition, useOptimistic } from 'react';
 import { useRouter } from 'next/navigation';
 import DeleteConfirmationDialog from '@/components/ui/DeleteConfirmationDialog';
+import { formatCurrency } from '@/lib/currency';
 import { 
   createLeadAction, 
   updateLeadAction, 
@@ -179,9 +179,6 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
     });
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
-  };
 
   return (
     <div className="space-y-8">
@@ -454,7 +451,7 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                    Est. Pipeline Value ($)
+                    Est. Pipeline Value (₹)
                   </label>
                   <input
                     type="number"
@@ -606,7 +603,7 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                    Est. Pipeline Value ($)
+                    Est. Pipeline Value (₹)
                   </label>
                   <input
                     type="number"

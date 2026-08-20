@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { db } from '@/lib/db';
 import { getSession } from '@/lib/session';
+import { formatCurrency } from '@/lib/currency';
 import { 
   ArrowLeft, 
   Building, 
@@ -70,9 +71,6 @@ export default async function ClientDetailPage({ params }: PageProps) {
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
-  };
 
   return (
     <div className="space-y-8">

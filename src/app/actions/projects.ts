@@ -29,6 +29,15 @@ export async function createProjectAction(formData: FormData) {
     return { error: 'Project name and client are required.' };
   }
 
+  if (startDate) {
+    if (plannedEndDate && plannedEndDate < startDate) {
+      return { error: 'Planned End Date cannot be earlier than Start Date.' };
+    }
+    if (actualEndDate && actualEndDate < startDate) {
+      return { error: 'Actual End Date cannot be earlier than Start Date.' };
+    }
+  }
+
   try {
     // Verify client belongs to user
     const client = await db.client.findFirst({
@@ -109,6 +118,15 @@ export async function updateProjectAction(id: string, formData: FormData) {
 
   if (!name || !clientId) {
     return { error: 'Project name and client are required.' };
+  }
+
+  if (startDate) {
+    if (plannedEndDate && plannedEndDate < startDate) {
+      return { error: 'Planned End Date cannot be earlier than Start Date.' };
+    }
+    if (actualEndDate && actualEndDate < startDate) {
+      return { error: 'Actual End Date cannot be earlier than Start Date.' };
+    }
   }
 
   try {

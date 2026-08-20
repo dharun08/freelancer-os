@@ -1,9 +1,9 @@
-'use strict';
 'use client';
 
-import React, { useState, useTransition } from 'react';
+import React, { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DeleteConfirmationDialog from '@/components/ui/DeleteConfirmationDialog';
+import { formatCurrency } from '@/lib/currency';
 import { 
   createProjectAction, 
   updateProjectAction, 
@@ -75,6 +75,14 @@ export default function ProjectsClient({ initialProjects, clients }: ProjectsCli
   const [createStatus, setCreateStatus] = useState('Planning');
   const [editStatus, setEditStatus] = useState('Planning');
 
+  // Project date validation states
+  const [createStartDate, setCreateStartDate] = useState('');
+  const [createPlannedEndDate, setCreatePlannedEndDate] = useState('');
+
+  const [editStartDate, setEditStartDate] = useState('');
+  const [editPlannedEndDate, setEditPlannedEndDate] = useState('');
+  const [editActualEndDate, setEditActualEndDate] = useState('');
+
   // Delete dialog states
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [projectToDelete, setProjectToDelete] = useState<string | null>(null);
@@ -87,6 +95,23 @@ export default function ProjectsClient({ initialProjects, clients }: ProjectsCli
     acc[status] = initialProjects.filter(p => p.status === status);
     return acc;
   }, {} as Record<string, Project[]>);
+
+  useEffect(() => {
+    if (createModalOpen) {
+      setCreateStartDate('');
+      setCreatePlannedEndDate('');
+      setCreateStatus('Planning');
+    }
+  }, [createModalOpen]);
+
+  useEffect(() => {
+    if (editModalOpen && selectedProject) {
+      setEditStartDate(selectedProject.startDate ? new Date(selectedProject.startDate).toISOString().split('T')[0] : '');
+      setEditPlannedEndDate(selectedProject.plannedEndDate ? new Date(selectedProject.plannedEndDate).toISOString().split('T')[0] : '');
+      setEditActualEndDate(selectedProject.actualEndDate ? new Date(selectedProject.actualEndDate).toISOString().split('T')[0] : '');
+      setEditStatus(selectedProject.status);
+    }
+  }, [editModalOpen, selectedProject]);
 
   // Actions
   const handleCreateProject = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -160,9 +185,6 @@ export default function ProjectsClient({ initialProjects, clients }: ProjectsCli
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -680,7 +702,7 @@ export default function ProjectsClient({ initialProjects, clients }: ProjectsCli
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                    Contract Budget ($)
+                    Contract Budget (₹)
                   </label>
                   <input
                     type="number"
@@ -700,6 +722,14 @@ export default function ProjectsClient({ initialProjects, clients }: ProjectsCli
                   <input
                     type="date"
                     name="startDate"
+                    value={createStartDate}
+                    onChange={(e) => {
+                      const newStart = e.target.value;
+                      setCreateStartDate(newStart);
+                      if (createPlannedEndDate && newStart && createPlannedEndDate < newStart) {
+                        setCreatePlannedEndDate('');
+                      }
+                    }}
                     className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground"
                   />
                 </div>
@@ -710,6 +740,9 @@ export default function ProjectsClient({ initialProjects, clients }: ProjectsCli
                   <input
                     type="date"
                     name="plannedEndDate"
+                    value={createPlannedEndDate}
+                    min={createStartDate}
+                    onChange={(e) => setCreatePlannedEndDate(e.target.value)}
                     className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground"
                   />
                 </div>
@@ -833,7 +866,7 @@ export default function ProjectsClient({ initialProjects, clients }: ProjectsCli
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">
-                    Contract Budget ($)
+                    Contract Budget (₹)
                   </label>
                   <input
                     type="number"
@@ -853,7 +886,17 @@ export default function ProjectsClient({ initialProjects, clients }: ProjectsCli
                   <input
                     type="date"
                     name="startDate"
-                    defaultValue={selectedProject.startDate ? new Date(selectedProject.startDate).toISOString().split('T')[0] : ''}
+                    value={editStartDate}
+                    onChange={(e) => {
+                      const newStart = e.target.value;
+                      setEditStartDate(newStart);
+                      if (editPlannedEndDate && newStart && editPlannedEndDate < newStart) {
+                        setEditPlannedEndDate('');
+                      }
+                      if (editActualEndDate && newStart && editActualEndDate < newStart) {
+                        setEditActualEndDate('');
+                      }
+                    }}
                     className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground"
                   />
                 </div>
@@ -864,7 +907,9 @@ export default function ProjectsClient({ initialProjects, clients }: ProjectsCli
                   <input
                     type="date"
                     name="plannedEndDate"
-                    defaultValue={selectedProject.plannedEndDate ? new Date(selectedProject.plannedEndDate).toISOString().split('T')[0] : ''}
+                    value={editPlannedEndDate}
+                    min={editStartDate}
+                    onChange={(e) => setEditPlannedEndDate(e.target.value)}
                     className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground"
                   />
                 </div>
@@ -877,7 +922,9 @@ export default function ProjectsClient({ initialProjects, clients }: ProjectsCli
                 <input
                   type="date"
                   name="actualEndDate"
-                  defaultValue={selectedProject.actualEndDate ? new Date(selectedProject.actualEndDate).toISOString().split('T')[0] : ''}
+                  value={editActualEndDate}
+                  min={editStartDate}
+                  onChange={(e) => setEditActualEndDate(e.target.value)}
                   disabled={editStatus !== 'Completed'}
                   className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                 />

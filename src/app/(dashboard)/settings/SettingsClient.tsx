@@ -2,8 +2,23 @@
 'use client';
 
 import React, { useState, useTransition } from 'react';
-import { updateProfileSettingsAction, updatePreferencesAction } from '@/app/actions/settings';
-import { User, Settings, Loader2, Save, BadgeCheck, CheckCircle2 } from 'lucide-react';
+import { 
+  updateProfileSettingsAction, 
+  updatePreferencesAction,
+  uploadLogoAction,
+  removeLogoAction
+} from '@/app/actions/settings';
+import { 
+  User, 
+  Settings, 
+  Loader2, 
+  Save, 
+  BadgeCheck, 
+  CheckCircle2,
+  Upload,
+  Trash2,
+  Image as ImageIcon
+} from 'lucide-react';
 
 interface UserData {
   name: string;
@@ -28,6 +43,76 @@ export default function SettingsClient({ user }: SettingsClientProps) {
   // Banners
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+
+  // Logo States
+  const [logoUrl, setLogoUrl] = useState(user.logoUrl || '');
+  const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [isLogoUploading, setIsLogoUploading] = useState(false);
+  const [logoError, setLogoError] = useState('');
+
+  const handleLogoChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLogoError('');
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate size
+    if (file.size > 2 * 1024 * 1024) {
+      setLogoError('Logo must be smaller than 2 MB.');
+      return;
+    }
+
+    // Validate extension
+    const ext = file.name.split('.').pop()?.toLowerCase();
+    if (!ext || !['jpg', 'jpeg', 'png', 'webp'].includes(ext)) {
+      setLogoError('Invalid file format. Only JPG, JPEG, PNG, and WebP are allowed.');
+      return;
+    }
+
+    // Set preview locally first
+    const localPreview = URL.createObjectURL(file);
+    setLogoPreview(localPreview);
+
+    // Call server action immediately
+    const formData = new FormData();
+    formData.append('logo', file);
+
+    setIsLogoUploading(true);
+    try {
+      const result = await uploadLogoAction(formData);
+      setIsLogoUploading(false);
+
+      if (result.error) {
+        setLogoError(result.error);
+        setLogoPreview(null);
+      } else if (result.logoUrl) {
+        setLogoUrl(result.logoUrl);
+        setLogoPreview(null);
+      }
+    } catch (err) {
+      setIsLogoUploading(false);
+      setLogoError('Something went wrong while uploading.');
+      setLogoPreview(null);
+    }
+  };
+
+  const handleRemoveLogo = async () => {
+    setLogoError('');
+    setIsLogoUploading(true);
+    try {
+      const result = await removeLogoAction();
+      setIsLogoUploading(false);
+
+      if (result.error) {
+        setLogoError(result.error);
+      } else {
+        setLogoUrl('');
+        setLogoPreview(null);
+      }
+    } catch (err) {
+      setIsLogoUploading(false);
+      setLogoError('Failed to remove logo.');
+    }
+  };
 
   const handleUpdateProfile = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -167,15 +252,66 @@ export default function SettingsClient({ user }: SettingsClientProps) {
                 </div>
                 <div>
                   <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">
-                    Brand Logo Image URL
+                    Brand Logo
                   </label>
-                  <input
-                    type="text"
-                    name="logoUrl"
-                    defaultValue={user.logoUrl || ''}
-                    placeholder="https://example.com/logo.png"
-                    className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40 text-foreground font-medium"
-                  />
+                  <div className="flex items-center space-x-4">
+                    {/* Preview Box */}
+                    {(logoPreview || logoUrl) ? (
+                      <div className="relative w-16 h-16 rounded-xl border border-border bg-muted flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                        <img 
+                          src={logoPreview || logoUrl} 
+                          alt="Brand Logo" 
+                          className="w-full h-full object-contain"
+                        />
+                      </div>
+                    ) : (
+                      <div className="w-16 h-16 rounded-xl border border-dashed border-border/80 bg-muted/40 flex items-center justify-center text-muted-foreground shrink-0">
+                        <ImageIcon className="h-6 w-6 opacity-40" />
+                      </div>
+                    )}
+
+                    {/* Controls */}
+                    <div className="flex-1 min-w-0">
+                      {isLogoUploading ? (
+                        <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+                          <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                          <span>Uploading logo...</span>
+                        </div>
+                      ) : (
+                        <div className="flex flex-wrap items-center gap-2">
+                          <label className="flex items-center space-x-1 px-3 py-1.5 border border-border hover:bg-muted text-xs font-semibold rounded-lg cursor-pointer transition-colors duration-150 text-foreground">
+                            <Upload className="h-3 w-3 mr-1" />
+                            <span>{(logoPreview || logoUrl) ? 'Replace' : 'Upload Logo'}</span>
+                            <input 
+                              type="file" 
+                              accept="image/jpeg,image/png,image/webp" 
+                              onChange={handleLogoChange}
+                              className="hidden"
+                            />
+                          </label>
+
+                          {(logoPreview || logoUrl) && (
+                            <button
+                              type="button"
+                              onClick={handleRemoveLogo}
+                              className="flex items-center space-x-1 px-3 py-1.5 border border-transparent hover:bg-red-500/10 text-red-500 text-xs font-semibold rounded-lg cursor-pointer transition-colors duration-150"
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              <span>Remove</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      <p className="text-[10px] text-muted-foreground mt-1.5">
+                        JPG, JPEG, PNG, or WebP. Max 2 MB.
+                      </p>
+                      {logoError && (
+                        <p className="text-[10px] text-red-500 font-semibold mt-1">
+                          {logoError}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 

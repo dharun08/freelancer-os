@@ -3,6 +3,7 @@
 import React, { useState, useTransition, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import DeleteConfirmationDialog from '@/components/ui/DeleteConfirmationDialog';
+import { formatCurrency } from '@/lib/currency';
 import { 
   createInvoiceAction, 
   updateInvoiceAction,
@@ -261,9 +262,6 @@ export default function InvoicesClient({ initialInvoices, clients }: InvoicesCli
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
-  };
 
   return (
     <div className="space-y-6">
@@ -570,7 +568,7 @@ export default function InvoicesClient({ initialInvoices, clients }: InvoicesCli
                         <input
                           type="number"
                           step="0.01"
-                          placeholder="Rate ($)"
+                          placeholder="Rate (₹)"
                           value={item.rate}
                           onChange={(e) => handleUpdateItem(index, 'rate', e.target.value)}
                           className="w-full px-3 py-1.5 bg-background border border-border rounded-xl text-sm focus:outline-none"

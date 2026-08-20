@@ -21,7 +21,8 @@ import {
   LogOut,
   Search,
   User as UserIcon,
-  ChevronRight
+  ChevronRight,
+  Home
 } from 'lucide-react';
 
 interface DashboardShellProps {
@@ -30,6 +31,7 @@ interface DashboardShellProps {
     name: string;
     email: string;
     companyName: string | null;
+    logoUrl: string | null;
   };
 }
 
@@ -74,9 +76,15 @@ export default function DashboardShell({ children, user }: DashboardShellProps) 
         {/* Logo Section */}
         <div className="flex h-16 items-center justify-between px-6 border-b border-border">
           <Link href="/" className="flex items-center space-x-2">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-500/10">
-              <span className="text-white font-extrabold text-sm">F</span>
-            </div>
+            {user.logoUrl ? (
+              <div className="h-8 w-8 rounded-lg bg-card border border-border flex items-center justify-center overflow-hidden shrink-0 shadow-sm">
+                <img src={user.logoUrl} alt="Logo" className="w-full h-full object-contain" />
+              </div>
+            ) : (
+              <div className="h-8 w-8 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center shadow-md shadow-indigo-500/10 shrink-0">
+                <span className="text-white font-extrabold text-sm">F</span>
+              </div>
+            )}
             <span className="text-lg font-bold tracking-tight text-foreground">
               Freelancer<span className="text-indigo-500 font-extrabold">OS</span>
             </span>
@@ -152,6 +160,16 @@ export default function DashboardShell({ children, user }: DashboardShellProps) 
           </div>
 
           <div className="flex items-center space-x-4">
+            {/* Home Icon */}
+            <Link
+              href="/"
+              className="rounded-xl p-2 hover:bg-muted text-muted-foreground hover:text-foreground transition-all duration-200"
+              title="Dashboard"
+              aria-label="Dashboard"
+            >
+              <Home className="h-4 w-4" />
+            </Link>
+
             {/* Theme Toggle */}
             <button
               onClick={toggleTheme}

@@ -1,8 +1,8 @@
-'use strict';
 'use client';
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { formatCurrency } from '@/lib/currency';
 import { 
   AreaChart, 
   Area, 
@@ -82,9 +82,6 @@ export default function RevenueClient({
     setMounted(true);
   }, []);
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' }).format(amount);
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -153,7 +150,7 @@ export default function RevenueClient({
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#374151" opacity={0.15} />
                 <XAxis dataKey="name" stroke="#94a3b8" />
-                <YAxis stroke="#94a3b8" tickFormatter={(v) => `$${v}`} />
+                <YAxis stroke="#94a3b8" tickFormatter={(v) => `₹${Number(v).toLocaleString('en-IN')}`} />
                 <Tooltip 
                   formatter={(v) => [formatCurrency(v as number), 'Revenue']}
                   contentStyle={{ backgroundColor: 'var(--card)', borderColor: 'var(--border)' }}
@@ -281,7 +278,7 @@ export default function RevenueClient({
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={clientRevenueData} layout="vertical" margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#374151" opacity={0.15} />
-                <XAxis type="number" stroke="#94a3b8" tickFormatter={(v) => `$${v}`} />
+                <XAxis type="number" stroke="#94a3b8" tickFormatter={(v) => `₹${Number(v).toLocaleString('en-IN')}`} />
                 <YAxis dataKey="name" type="category" stroke="#94a3b8" width={80} />
                 <Tooltip 
                   formatter={(v) => [formatCurrency(v as number), 'Paid Revenue']}

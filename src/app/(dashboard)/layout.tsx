@@ -21,6 +21,7 @@ export default async function DashboardLayout({
       name: true,
       email: true,
       companyName: true,
+      logoUrl: true,
     },
   });
 
