@@ -229,12 +229,12 @@ export default function RevenueClient({
               <tbody className="divide-y divide-border/60">
                 {topClients.map((client) => (
                   <tr key={client.id} className="hover:bg-muted/10 transition-colors">
-                    <td className="py-3">
-                      <div className="font-semibold text-foreground">{client.name}</div>
+                    <td className="py-3 max-w-xs">
+                      <div className="font-semibold text-foreground truncate" title={client.name}>{client.name}</div>
                       {client.company && (
-                        <div className="text-xs text-muted-foreground flex items-center mt-0.5">
-                          <Building className="h-3 w-3 mr-1 text-slate-500" />
-                          <span>{client.company}</span>
+                        <div className="text-xs text-muted-foreground flex items-center mt-0.5 truncate" title={client.company}>
+                          <Building className="h-3 w-3 mr-1 text-slate-500 shrink-0" />
+                          <span className="truncate">{client.company}</span>
                         </div>
                       )}
                     </td>

@@ -298,9 +298,9 @@ export default function FollowUpsClient({ initialFollowUps, clients }: FollowUps
                     <span className="p-2 bg-muted rounded-xl shrink-0">
                       {getCommIcon(f.type)}
                     </span>
-                    <div>
-                      <h4 className="font-bold text-sm text-foreground line-clamp-1">{f.title}</h4>
-                      <p className="text-xs text-muted-foreground mt-0.5">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-bold text-sm text-foreground truncate" title={f.title}>{f.title}</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate" title={f.client.name}>
                         Client: <span className="text-foreground font-semibold">{f.client.name}</span>
                       </p>
                     </div>

@@ -23,6 +23,10 @@ export async function createClientAction(formData: FormData) {
     return { error: 'Name and email are required.' };
   }
 
+  if (name.trim().length > 100) {
+    return { error: 'Client name cannot exceed 100 characters.' };
+  }
+
   const email = normalizeEmail(emailInput);
   if (!isValidEmail(email)) {
     return { error: 'Please provide a valid email address.' };
@@ -63,6 +67,10 @@ export async function updateClientAction(id: string, formData: FormData) {
 
   if (!name || !emailInput) {
     return { error: 'Name and email are required.' };
+  }
+
+  if (name.trim().length > 100) {
+    return { error: 'Client name cannot exceed 100 characters.' };
   }
 
   const email = normalizeEmail(emailInput);

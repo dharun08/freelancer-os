@@ -16,9 +16,26 @@ export default async function ClientsPage() {
     where: {
       userId: session.userId,
     },
-    include: {
-      projects: true,
-      invoices: true,
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      phone: true,
+      company: true,
+      status: true,
+      notes: true,
+      createdAt: true,
+      projects: {
+        select: {
+          id: true,
+        },
+      },
+      invoices: {
+        select: {
+          id: true,
+          status: true,
+        },
+      },
     },
     orderBy: {
       createdAt: 'desc',

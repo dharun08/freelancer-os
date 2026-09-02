@@ -275,8 +275,8 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
                       key={lead.id} 
                       className="bg-card border border-border hover:border-primary/45 rounded-xl p-4 shadow-sm hover:shadow-md transition-all group relative"
                     >
-                      <h4 className="font-bold text-sm text-foreground line-clamp-1">{lead.title}</h4>
-                      <p className="text-xs text-muted-foreground font-medium mt-1">{lead.contactName}</p>
+                      <h4 className="font-bold text-sm text-foreground truncate" title={lead.title}>{lead.title}</h4>
+                      <p className="text-xs text-muted-foreground font-medium mt-1 truncate" title={lead.contactName}>{lead.contactName}</p>
                       
                       {lead.company && (
                         <div className="flex items-center text-[10px] text-muted-foreground mt-1.5">
@@ -374,6 +374,7 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
                   type="text"
                   name="title"
                   required
+                  maxLength={100}
                   placeholder="Website Redesign Project"
                   className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
@@ -388,6 +389,7 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
                     type="text"
                     name="contactName"
                     required
+                    maxLength={100}
                     placeholder="Sarah Jenkins"
                     className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
@@ -526,6 +528,7 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
                   type="text"
                   name="title"
                   required
+                  maxLength={100}
                   defaultValue={selectedLead.title}
                   className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
@@ -540,6 +543,7 @@ export default function LeadsClient({ initialLeads }: LeadsClientProps) {
                     type="text"
                     name="contactName"
                     required
+                    maxLength={100}
                     defaultValue={selectedLead.contactName}
                     className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />

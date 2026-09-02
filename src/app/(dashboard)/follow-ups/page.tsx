@@ -12,31 +12,32 @@ export default async function FollowUpsPage() {
     redirect('/login');
   }
 
-  const followUps = await db.followUp.findMany({
-    where: {
-      userId: session.userId,
-    },
-    include: {
-      client: true,
-    },
-    orderBy: {
-      dueDate: 'asc',
-    },
-  });
-
-  const clients = await db.client.findMany({
-    where: {
-      userId: session.userId,
-    },
-    orderBy: {
-      name: 'asc',
-    },
-    select: {
-      id: true,
-      name: true,
-      company: true,
-    },
-  });
+  const [followUps, clients] = await Promise.all([
+    db.followUp.findMany({
+      where: {
+        userId: session.userId,
+      },
+      include: {
+        client: true,
+      },
+      orderBy: {
+        dueDate: 'asc',
+      },
+    }),
+    db.client.findMany({
+      where: {
+        userId: session.userId,
+      },
+      orderBy: {
+        name: 'asc',
+      },
+      select: {
+        id: true,
+        name: true,
+        company: true,
+      },
+    }),
+  ]);
 
   return (
     <div className="space-y-6">

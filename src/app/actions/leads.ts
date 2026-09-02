@@ -25,6 +25,14 @@ export async function createLeadAction(formData: FormData) {
     return { error: 'Title, contact name, and email are required.' };
   }
 
+  if (contactName.trim().length > 100) {
+    return { error: 'Lead contact name cannot exceed 100 characters.' };
+  }
+
+  if (title.trim().length > 100) {
+    return { error: 'Lead title cannot exceed 100 characters.' };
+  }
+
   const email = normalizeEmail(emailInput);
   if (!isValidEmail(email)) {
     return { error: 'Please provide a valid email address.' };
@@ -95,6 +103,14 @@ export async function updateLeadAction(id: string, formData: FormData) {
 
   if (!title || !contactName || !emailInput) {
     return { error: 'Title, contact name, and email are required.' };
+  }
+
+  if (contactName.trim().length > 100) {
+    return { error: 'Lead contact name cannot exceed 100 characters.' };
+  }
+
+  if (title.trim().length > 100) {
+    return { error: 'Lead title cannot exceed 100 characters.' };
   }
 
   const email = normalizeEmail(emailInput);

@@ -29,16 +29,48 @@ export default async function DashboardPage() {
 
   // 1. Fetch data concurrently scoped to authenticated user
   const [clients, projects, leads, invoices, followUps] = await Promise.all([
-    db.client.findMany({ where: { userId: session.userId } }),
-    db.project.findMany({ where: { userId: session.userId }, include: { client: true } }),
-    db.lead.findMany({ where: { userId: session.userId } }),
-    db.invoice.findMany({ where: { userId: session.userId }, include: { client: true } }),
-    db.followUp.findMany({ 
+    db.client.findMany({
+      where: { userId: session.userId },
+      select: { id: true, status: true },
+    }),
+    db.project.findMany({
+      where: { userId: session.userId },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+        budget: true,
+        plannedEndDate: true,
+        client: { select: { name: true } },
+      },
+    }),
+    db.lead.findMany({
+      where: { userId: session.userId },
+      select: { id: true, status: true, pipelineValue: true },
+    }),
+    db.invoice.findMany({
+      where: { userId: session.userId },
+      select: {
+        id: true,
+        status: true,
+        outstandingAmount: true,
+        totalAmount: true,
+        issueDate: true,
+      },
+    }),
+    db.followUp.findMany({
       where: { userId: session.userId, status: 'Pending' },
-      include: { client: true },
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        dueDate: true,
+        status: true,
+        client: { select: { name: true } },
+      },
       orderBy: { dueDate: 'asc' },
-      take: 5
-    })
+      take: 5,
+    }),
   ]);
 
   // 2. Compute Dashboard Cards Metrics
@@ -223,14 +255,14 @@ export default async function DashboardPage() {
             ) : (
               <div className="space-y-4">
                 {projects.slice(0, 4).map((p) => (
-                  <div key={p.id} className="flex justify-between items-center bg-muted/10 p-3.5 border border-border/60 rounded-xl">
-                    <div>
-                      <h4 className="font-semibold text-sm text-foreground">{p.name}</h4>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Client: <strong className="text-foreground">{p.client.name}</strong> • Budget: {formatCurrency(p.budget)}
+                  <div key={p.id} className="flex justify-between items-center bg-muted/10 p-3.5 border border-border/60 rounded-xl gap-3">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold text-sm text-foreground truncate" title={p.name}>{p.name}</h4>
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                        Client: <strong className="text-foreground" title={p.client.name}>{p.client.name}</strong> • Budget: {formatCurrency(p.budget)}
                       </p>
                     </div>
-                    <span className="text-[10px] font-bold bg-indigo-500/10 text-indigo-500 border border-indigo-200/20 px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] font-bold bg-indigo-500/10 text-indigo-500 border border-indigo-200/20 px-2 py-0.5 rounded-full shrink-0">
                       {p.status}
                     </span>
                   </div>
@@ -261,14 +293,14 @@ export default async function DashboardPage() {
                 followUps.map((f) => (
                   <div key={f.id} className="p-3 bg-muted/20 border border-border/60 rounded-xl space-y-2">
                     <div className="flex justify-between items-start gap-2">
-                      <span className="font-semibold text-xs text-foreground line-clamp-2">{f.title}</span>
+                      <span className="font-semibold text-xs text-foreground line-clamp-2" title={f.title}>{f.title}</span>
                       <span className="text-[9px] bg-indigo-50 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300 border border-indigo-100/50 px-1.5 py-0.2 rounded-full shrink-0">
                         {f.type}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center text-[10px] text-muted-foreground">
-                      <span>Client: {f.client.name}</span>
-                      <span>{new Date(f.dueDate).toLocaleDateString()}</span>
+                    <div className="flex justify-between items-center text-[10px] text-muted-foreground gap-2">
+                      <span className="truncate max-w-[150px]" title={f.client.name}>Client: {f.client.name}</span>
+                      <span className="shrink-0">{new Date(f.dueDate).toLocaleDateString()}</span>
                     </div>
                   </div>
                 ))

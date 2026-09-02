@@ -29,6 +29,10 @@ export async function createProjectAction(formData: FormData) {
     return { error: 'Project name and client are required.' };
   }
 
+  if (name.trim().length > 120) {
+    return { error: 'Project name cannot exceed 120 characters.' };
+  }
+
   if (startDate) {
     if (plannedEndDate && plannedEndDate < startDate) {
       return { error: 'Planned End Date cannot be earlier than Start Date.' };
@@ -118,6 +122,10 @@ export async function updateProjectAction(id: string, formData: FormData) {
 
   if (!name || !clientId) {
     return { error: 'Project name and client are required.' };
+  }
+
+  if (name.trim().length > 120) {
+    return { error: 'Project name cannot exceed 120 characters.' };
   }
 
   if (startDate) {

@@ -12,31 +12,32 @@ export default async function ProjectsPage() {
     redirect('/login');
   }
 
-  const projects = await db.project.findMany({
-    where: {
-      userId: session.userId,
-    },
-    include: {
-      client: true,
-    },
-    orderBy: {
-      createdAt: 'desc',
-    },
-  });
-
-  const clients = await db.client.findMany({
-    where: {
-      userId: session.userId,
-    },
-    orderBy: {
-      name: 'asc',
-    },
-    select: {
-      id: true,
-      name: true,
-      company: true,
-    },
-  });
+  const [projects, clients] = await Promise.all([
+    db.project.findMany({
+      where: {
+        userId: session.userId,
+      },
+      include: {
+        client: true,
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+    }),
+    db.client.findMany({
+      where: {
+        userId: session.userId,
+      },
+      orderBy: {
+        name: 'asc',
+      },
+      select: {
+        id: true,
+        name: true,
+        company: true,
+      },
+    }),
+  ]);
 
   return (
     <div className="space-y-6">
@@ -47,7 +48,9 @@ export default async function ProjectsPage() {
         </p>
       </div>
 
-      <ProjectsClient initialProjects={projects} clients={clients} />
+      <React.Suspense fallback={null}>
+        <ProjectsClient initialProjects={projects} clients={clients} />
+      </React.Suspense>
     </div>
   );
 }

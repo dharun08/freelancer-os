@@ -12,30 +12,50 @@ export default async function RevenuePage() {
     redirect('/login');
   }
 
-  const invoices = await db.invoice.findMany({
-    where: {
-      userId: session.userId,
-    },
-    include: {
-      client: true,
-    },
-  });
-
-  const clients = await db.client.findMany({
-    where: {
-      userId: session.userId,
-    },
-    include: {
-      invoices: true,
-      projects: true,
-    },
-  });
-
-  const projects = await db.project.findMany({
-    where: {
-      userId: session.userId,
-    },
-  });
+  const [invoices, clients, projects] = await Promise.all([
+    db.invoice.findMany({
+      where: {
+        userId: session.userId,
+      },
+      select: {
+        id: true,
+        totalAmount: true,
+        outstandingAmount: true,
+        status: true,
+        issueDate: true,
+        dueDate: true,
+      },
+    }),
+    db.client.findMany({
+      where: {
+        userId: session.userId,
+      },
+      select: {
+        id: true,
+        name: true,
+        company: true,
+        status: true,
+        projects: { select: { id: true } },
+        invoices: {
+          select: {
+            id: true,
+            totalAmount: true,
+            outstandingAmount: true,
+            status: true,
+          },
+        },
+      },
+    }),
+    db.project.findMany({
+      where: {
+        userId: session.userId,
+      },
+      select: {
+        id: true,
+        budget: true,
+      },
+    }),
+  ]);
 
   // 1. Calculate General Metrics
   const paidInvoices = invoices.filter((i) => i.status === 'Paid');

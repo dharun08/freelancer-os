@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useTransition, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import DeleteConfirmationDialog from '@/components/ui/DeleteConfirmationDialog';
 import { formatCurrency } from '@/lib/currency';
 import { 
@@ -60,6 +60,7 @@ const STATUSES = ['Planning', 'In Progress', 'Review', 'Completed', 'On Hold'];
 
 export default function ProjectsClient({ initialProjects, clients }: ProjectsClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
 
   // View States
@@ -112,6 +113,17 @@ export default function ProjectsClient({ initialProjects, clients }: ProjectsCli
       setEditStatus(selectedProject.status);
     }
   }, [editModalOpen, selectedProject]);
+
+  useEffect(() => {
+    const projectId = searchParams.get('id');
+    if (projectId) {
+      const found = initialProjects.find((p) => p.id === projectId);
+      if (found) {
+        setSelectedProject(found);
+        setViewModalOpen(true);
+      }
+    }
+  }, [searchParams, initialProjects]);
 
   // Actions
   const handleCreateProject = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -347,7 +359,8 @@ export default function ProjectsClient({ initialProjects, clients }: ProjectsCli
                             setSelectedProject(project);
                             setViewModalOpen(true);
                           }}
-                          className="font-bold text-sm text-foreground hover:text-primary transition-colors text-left line-clamp-1 cursor-pointer block w-full"
+                          className="font-bold text-sm text-foreground hover:text-primary transition-colors text-left truncate cursor-pointer block w-full"
+                          title={project.name}
                         >
                           {project.name}
                         </button>
@@ -450,6 +463,7 @@ export default function ProjectsClient({ initialProjects, clients }: ProjectsCli
                           setViewModalOpen(true);
                         }}
                         className="font-semibold text-sm hover:text-primary transition-colors truncate text-left cursor-pointer w-full block"
+                        title={project.name}
                       >
                         {project.name}
                       </button>
@@ -659,6 +673,7 @@ export default function ProjectsClient({ initialProjects, clients }: ProjectsCli
                   type="text"
                   name="name"
                   required
+                  maxLength={120}
                   placeholder="Website Overhaul & SEO Setup"
                   className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />
@@ -823,6 +838,7 @@ export default function ProjectsClient({ initialProjects, clients }: ProjectsCli
                   type="text"
                   name="name"
                   required
+                  maxLength={120}
                   defaultValue={selectedProject.name}
                   className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                 />

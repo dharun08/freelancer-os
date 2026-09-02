@@ -230,13 +230,13 @@ export default function ClientsClient({ initialClients }: ClientsClientProps) {
             >
               <div>
                 <div className="flex items-start justify-between mb-4">
-                  <div>
-                    <h3 className="font-bold text-lg group-hover:text-primary transition-colors line-clamp-1">
+                  <div className="flex-1 min-w-0 pr-2">
+                    <h3 className="font-bold text-lg group-hover:text-primary transition-colors truncate" title={client.name}>
                       {client.name}
                     </h3>
                     {client.company && (
-                      <div className="flex items-center text-xs text-muted-foreground mt-0.5">
-                        <Building className="h-3 w-3 mr-1" />
+                      <div className="flex items-center text-xs text-muted-foreground mt-0.5 truncate" title={client.company}>
+                        <Building className="h-3 w-3 mr-1 shrink-0" />
                         <span className="truncate">{client.company}</span>
                       </div>
                     )}
@@ -329,12 +329,12 @@ export default function ClientsClient({ initialClients }: ClientsClientProps) {
               <tbody className="divide-y divide-border/60 text-sm">
                 {filteredClients.map((client) => (
                   <tr key={client.id} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-6 py-4 font-semibold text-foreground">
-                      <Link href={`/clients/${client.id}`} className="hover:underline">
+                    <td className="px-6 py-4 font-semibold text-foreground max-w-xs">
+                      <Link href={`/clients/${client.id}`} className="hover:underline truncate block" title={client.name}>
                         {client.name}
                       </Link>
                     </td>
-                    <td className="px-6 py-4 text-muted-foreground">{client.company || '-'}</td>
+                    <td className="px-6 py-4 text-muted-foreground max-w-xs truncate" title={client.company || ''}>{client.company || '-'}</td>
                     <td className="px-6 py-4 text-muted-foreground">{client.email}</td>
                     <td className="px-6 py-4 text-muted-foreground">{client.phone || '-'}</td>
                     <td className="px-6 py-4">
@@ -408,6 +408,7 @@ export default function ClientsClient({ initialClients }: ClientsClientProps) {
                     type="text"
                     name="name"
                     required
+                    maxLength={100}
                     className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />
                 </div>
@@ -527,6 +528,7 @@ export default function ClientsClient({ initialClients }: ClientsClientProps) {
                     type="text"
                     name="name"
                     required
+                    maxLength={100}
                     defaultValue={selectedClient.name}
                     className="w-full px-3 py-2 bg-background border border-border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/40"
                   />

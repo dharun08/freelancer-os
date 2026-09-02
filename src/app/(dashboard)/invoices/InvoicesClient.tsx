@@ -381,10 +381,10 @@ export default function InvoicesClient({ initialInvoices, clients }: InvoicesCli
                 {filteredInvoices.map((invoice) => (
                   <tr key={invoice.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-6 py-4 font-bold text-foreground">{invoice.invoiceNumber}</td>
-                    <td className="px-6 py-4">
-                      <div className="font-semibold text-foreground">{invoice.client.name}</div>
+                    <td className="px-6 py-4 max-w-xs">
+                      <div className="font-semibold text-foreground truncate" title={invoice.client.name}>{invoice.client.name}</div>
                       {invoice.client.company && (
-                        <div className="text-xs text-muted-foreground">{invoice.client.company}</div>
+                        <div className="text-xs text-muted-foreground truncate" title={invoice.client.company}>{invoice.client.company}</div>
                       )}
                     </td>
                     <td className="px-6 py-4 text-muted-foreground">

@@ -12,31 +12,32 @@ export default async function InvoicesPage() {
     redirect('/login');
   }
 
-  const invoices = await db.invoice.findMany({
-    where: {
-      userId: session.userId,
-    },
-    include: {
-      client: true,
-    },
-    orderBy: {
-      issueDate: 'desc',
-    },
-  });
-
-  const clients = await db.client.findMany({
-    where: {
-      userId: session.userId,
-    },
-    orderBy: {
-      name: 'asc',
-    },
-    select: {
-      id: true,
-      name: true,
-      company: true,
-    },
-  });
+  const [invoices, clients] = await Promise.all([
+    db.invoice.findMany({
+      where: {
+        userId: session.userId,
+      },
+      include: {
+        client: true,
+      },
+      orderBy: {
+        issueDate: 'desc',
+      },
+    }),
+    db.client.findMany({
+      where: {
+        userId: session.userId,
+      },
+      orderBy: {
+        name: 'asc',
+      },
+      select: {
+        id: true,
+        name: true,
+        company: true,
+      },
+    }),
+  ]);
 
   return (
     <div className="space-y-6">

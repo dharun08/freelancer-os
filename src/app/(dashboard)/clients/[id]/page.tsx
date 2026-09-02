@@ -71,6 +71,35 @@ export default async function ClientDetailPage({ params }: PageProps) {
     }
   };
 
+  const getProjectStatusColor = (status: string) => {
+    switch (status) {
+      case 'Planning':
+        return 'bg-purple-100 text-purple-800 dark:bg-purple-950/40 dark:text-purple-300 border-purple-200 dark:border-purple-900/50';
+      case 'In Progress':
+        return 'bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300 border-blue-200 dark:border-blue-900/50';
+      case 'Review':
+        return 'bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300 border-amber-200 dark:border-amber-900/50';
+      case 'Completed':
+        return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-900/50';
+      default:
+        return 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-400 border-slate-200';
+    }
+  };
+
+  const getProgressPercent = (status: string) => {
+    switch (status) {
+      case 'Planning':
+        return 25;
+      case 'In Progress':
+        return 50;
+      case 'Review':
+        return 75;
+      case 'Completed':
+        return 100;
+      default:
+        return 10;
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -85,15 +114,17 @@ export default async function ClientDetailPage({ params }: PageProps) {
           </Link>
           <div>
             <div className="flex items-center space-x-2.5">
-              <h1 className="text-3xl font-extrabold tracking-tight">{client.name}</h1>
+              <h1 className="text-3xl font-extrabold tracking-tight truncate max-w-md sm:max-w-xl" title={client.name}>
+                {client.name}
+              </h1>
               <span className={`text-xs font-semibold px-2.5 py-0.5 rounded-full border ${getStatusColor(client.status)}`}>
                 {client.status}
               </span>
             </div>
             {client.company && (
-              <p className="text-muted-foreground flex items-center mt-1 text-sm">
-                <Building className="h-4 w-4 mr-1.5 text-slate-400" />
-                {client.company}
+              <p className="text-muted-foreground flex items-center mt-1 text-sm truncate max-w-md" title={client.company}>
+                <Building className="h-4 w-4 mr-1.5 text-slate-400 shrink-0" />
+                <span className="truncate">{client.company}</span>
               </p>
             )}
           </div>
@@ -182,42 +213,103 @@ export default async function ClientDetailPage({ params }: PageProps) {
 
         {/* Content Column */}
         <div className="lg:col-span-2 space-y-8">
-          {/* Projects Section */}
+          {/* Linked Projects Section */}
           <div className="bg-card border border-border rounded-2xl p-6 shadow-sm">
             <div className="flex items-center justify-between border-b border-border pb-4 mb-4">
-              <h3 className="font-bold text-lg flex items-center">
-                <FolderKanban className="h-5 w-5 mr-2 text-indigo-500" />
-                <span>Associated Projects</span>
-              </h3>
-              <span className="text-xs bg-muted border border-border text-muted-foreground px-2 py-0.5 rounded-full font-medium">
-                {client.projects.length} Total
-              </span>
+              <div className="flex items-center space-x-2">
+                <FolderKanban className="h-5 w-5 text-indigo-500" />
+                <h3 className="font-bold text-lg">Linked Projects</h3>
+              </div>
+              <div className="flex items-center space-x-2">
+                <span className="text-xs bg-muted border border-border text-muted-foreground px-2.5 py-0.5 rounded-full font-medium">
+                  {client.projects.length} {client.projects.length === 1 ? 'Project' : 'Projects'}
+                </span>
+                <Link
+                  href="/projects"
+                  className="text-xs text-primary hover:underline font-medium flex items-center"
+                >
+                  <span>All Projects</span>
+                  <ExternalLink className="h-3.5 w-3.5 ml-1" />
+                </Link>
+              </div>
             </div>
 
             {client.projects.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">No projects registered for this client.</p>
+              <div className="text-center py-8 px-4 bg-muted/20 border border-dashed border-border rounded-xl">
+                <FolderKanban className="h-8 w-8 text-muted-foreground/40 mx-auto mb-2" />
+                <p className="text-sm font-semibold text-foreground">No linked projects found</p>
+                <p className="text-xs text-muted-foreground mt-1 mb-4">
+                  No active or past contracts are registered for this client.
+                </p>
+                <Link
+                  href="/projects"
+                  className="inline-flex items-center space-x-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-all shadow-sm"
+                >
+                  <span>Create Project</span>
+                </Link>
+              </div>
             ) : (
               <div className="space-y-3">
-                {client.projects.map((project) => (
-                  <div
-                    key={project.id}
-                    className="flex items-center justify-between p-4 bg-muted/20 border border-border/60 rounded-xl hover:border-primary/25 transition-all"
-                  >
-                    <div>
-                      <h4 className="font-semibold text-sm text-foreground">{project.name}</h4>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Budget: {formatCurrency(project.budget)} • Status:{' '}
-                        <span className="text-foreground font-medium">{project.status}</span>
-                      </p>
-                    </div>
+                {client.projects.map((project) => {
+                  const progress = getProgressPercent(project.status);
+                  return (
                     <Link
+                      key={project.id}
                       href={`/projects?id=${project.id}`}
-                      className="p-1.5 hover:bg-muted text-muted-foreground hover:text-foreground rounded-lg transition-colors"
+                      className="group block p-4 bg-muted/20 border border-border/60 hover:border-primary/40 rounded-xl transition-all hover:bg-muted/40"
                     >
-                      <ExternalLink className="h-4 w-4" />
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2">
+                            <h4 className="font-semibold text-sm text-foreground truncate group-hover:text-primary transition-colors" title={project.name}>
+                              {project.name}
+                            </h4>
+                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border shrink-0 ${getProjectStatusColor(project.status)}`}>
+                              {project.status}
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground mt-1.5">
+                            <span>
+                              Budget: <strong className="text-foreground font-medium">{formatCurrency(project.budget)}</strong>
+                            </span>
+                            {project.plannedEndDate && (
+                              <span className="flex items-center">
+                                <Calendar className="h-3.5 w-3.5 mr-1 text-muted-foreground/60" />
+                                {project.status === 'Completed' && project.actualEndDate
+                                  ? `Finished: ${new Date(project.actualEndDate).toLocaleDateString()}`
+                                  : `Target: ${new Date(project.plannedEndDate).toLocaleDateString()}`}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-4 sm:shrink-0">
+                          <div className="w-28 space-y-1">
+                            <div className="flex justify-between text-[10px] text-muted-foreground font-medium">
+                              <span>Progress</span>
+                              <span>{progress}%</span>
+                            </div>
+                            <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full transition-all duration-300 ${
+                                  project.status === 'Completed'
+                                    ? 'bg-emerald-500'
+                                    : project.status === 'Review'
+                                    ? 'bg-amber-500'
+                                    : 'bg-primary'
+                                }`}
+                                style={{ width: `${progress}%` }}
+                              />
+                            </div>
+                          </div>
+                          <span className="p-1 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition-all">
+                            <ExternalLink className="h-4 w-4" />
+                          </span>
+                        </div>
+                      </div>
                     </Link>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
