@@ -98,12 +98,12 @@ export default function LoginPage() {
 
       <div className="mt-6 text-center">
         <p className="text-sm text-slate-400">
-          Don't have an account?{' '}
+          Don't have an account yet?{' '}
           <Link
-            href="/register"
+            href="/join-beta"
             className="font-medium text-indigo-400 hover:text-indigo-300 transition-colors duration-200"
           >
-            Create account
+            Apply for Private Beta
           </Link>
         </p>
       </div>

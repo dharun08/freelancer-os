@@ -1,7 +1,6 @@
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -19,6 +18,7 @@ model User {
   timeZone     String     @default("UTC")
   dateFormat   String     @default("MM/DD/YYYY")
   theme        String     @default("light")
+  role         String     @default("USER") // USER, ADMIN
   clients      Client[]
   leads        Lead[]
   projects     Project[]
@@ -111,4 +111,29 @@ model FollowUp {
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+enum BetaApplicantStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model BetaApplicant {
+  id              String              @id @default(uuid())
+  name            String
+  email           String
+  freelanceType   String
+  activeClients   String
+  currentTools    String
+  mainProblem     String
+  status          BetaApplicantStatus @default(PENDING)
+  inviteToken     String?             @unique
+  inviteExpiresAt DateTime?
+  claimedAt       DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  @@index([email])
+  @@index([status])
 }

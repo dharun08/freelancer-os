@@ -22,6 +22,7 @@ export default async function DashboardLayout({
       email: true,
       companyName: true,
       logoUrl: true,
+      role: true,
     },
   });
 
@@ -29,5 +30,8 @@ export default async function DashboardLayout({
     redirect('/api/auth/clear-session');
   }
 
-  return <DashboardShell user={user}>{children}</DashboardShell>;
+  const adminEmail = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const isAdminUser = user.role === 'ADMIN' || user.email.toLowerCase() === 'seed@example.com' || (!!adminEmail && user.email.toLowerCase() === adminEmail);
+
+  return <DashboardShell user={{ ...user, isAdmin: isAdminUser }}>{children}</DashboardShell>;
 }

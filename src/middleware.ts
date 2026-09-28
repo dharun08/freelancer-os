@@ -57,25 +57,42 @@ async function decryptSession(token: string): Promise<SessionData | null> {
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get('session')?.value;
   const session = token ? await decryptSession(token) : null;
-  const isAuthPage = request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/register');
+  const pathname = request.nextUrl.pathname;
 
   // Static files, API routes, and favicon checks
   if (
-    request.nextUrl.pathname.startsWith('/_next') ||
-    request.nextUrl.pathname.startsWith('/api/') ||
-    request.nextUrl.pathname === '/favicon.ico'
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/api/') ||
+    pathname === '/favicon.ico' ||
+    pathname.endsWith('.svg') ||
+    pathname.endsWith('.png') ||
+    pathname.endsWith('.jpg') ||
+    pathname.endsWith('.ico')
   ) {
     return NextResponse.next();
   }
 
-  if (!session && !isAuthPage) {
+  const isPublicRoute =
+    pathname === '/' ||
+    pathname === '/join-beta' ||
+    pathname === '/privacy' ||
+    pathname === '/terms' ||
+    pathname.startsWith('/accept-invite') ||
+    pathname.startsWith('/login') ||
+    pathname.startsWith('/register');
+
+  const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
+
+  // Unauthenticated user trying to access protected route -> redirect to login
+  if (!session && !isPublicRoute) {
     const loginUrl = new URL('/login', request.nextUrl);
     return NextResponse.redirect(loginUrl);
   }
 
+  // Authenticated user on login/register -> redirect to dashboard
   if (session && isAuthPage) {
-    const homeUrl = new URL('/', request.nextUrl);
-    return NextResponse.redirect(homeUrl);
+    const dashboardUrl = new URL('/dashboard', request.nextUrl);
+    return NextResponse.redirect(dashboardUrl);
   }
 
   return NextResponse.next();

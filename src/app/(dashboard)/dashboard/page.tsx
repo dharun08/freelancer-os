@@ -11,12 +11,12 @@ import {
   Receipt, 
   DollarSign, 
   Calendar, 
-  Clock,
-  ArrowRight,
-  TrendingUp,
-  PlusCircle,
-  BellRing,
-  ArrowUpRight
+  Clock, 
+  ArrowRight, 
+  TrendingUp, 
+  PlusCircle, 
+  BellRing, 
+  ArrowUpRight 
 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -74,21 +74,19 @@ export default async function DashboardPage() {
   ]);
 
   // 2. Compute Dashboard Cards Metrics
-  const activeClients = clients.filter(c => c.status === 'Active').length;
-  
-  const openProjects = projects.filter(p => ['Planning', 'In Progress', 'Review'].includes(p.status)).length;
-  
-  const activeLeads = leads.filter(l => ['Prospect', 'Contacted', 'Proposal Sent', 'Negotiating'].includes(l.status));
+  const activeClients = clients.filter((c) => c.status === 'Active').length;
+  const openProjects = projects.filter((p) => ['Planning', 'In Progress', 'Review'].includes(p.status)).length;
+  const activeLeads = leads.filter((l) => ['Prospect', 'Contacted', 'Proposal Sent', 'Negotiating'].includes(l.status));
   const pipelineValue = activeLeads.reduce((sum, l) => sum + l.pipelineValue, 0);
 
-  const outstandingInvoicesList = invoices.filter(i => i.status !== 'Paid');
+  const outstandingInvoicesList = invoices.filter((i) => i.status !== 'Paid');
   const outstandingInvoicesCount = outstandingInvoicesList.length;
   const outstandingBalance = outstandingInvoicesList.reduce((sum, i) => sum + i.outstandingAmount, 0);
 
   // Earnings this month
   const now = new Date();
   const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const currentMonthPaid = invoices.filter(i => {
+  const currentMonthPaid = invoices.filter((i) => {
     const issueDate = new Date(i.issueDate);
     return i.status === 'Paid' && issueDate >= currentMonthStart;
   });
@@ -96,7 +94,7 @@ export default async function DashboardPage() {
 
   // Upcoming deadlines (projects ending in the next 14 days)
   const fourteenDaysFromNow = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
-  const upcomingDeadlinesCount = projects.filter(p => {
+  const upcomingDeadlinesCount = projects.filter((p) => {
     if (!p.plannedEndDate) return false;
     const end = new Date(p.plannedEndDate);
     return p.status !== 'Completed' && end >= now && end <= fourteenDaysFromNow;
@@ -104,8 +102,7 @@ export default async function DashboardPage() {
 
   // Follow-ups due today or overdue
   const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
-  const followUpsDueCount = followUps.filter(f => new Date(f.dueDate) <= todayEnd).length;
-
+  const followUpsDueCount = followUps.filter((f) => new Date(f.dueDate) <= todayEnd).length;
 
   return (
     <div className="space-y-8 font-sans">
