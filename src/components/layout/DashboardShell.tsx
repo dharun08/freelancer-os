@@ -228,7 +228,7 @@ export default function DashboardShell({ children, user }: DashboardShellProps) 
                     </div>
                     {user.isAdmin && (
                       <Link
-                        href="/admin/applicants"
+                        href="/admin/beta-applicants"
                         className="flex items-center space-x-2 px-4 py-2 text-sm text-indigo-500 hover:bg-indigo-500/10 transition-colors duration-150"
                         onClick={() => setUserMenuOpen(false)}
                       >

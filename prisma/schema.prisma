@@ -24,6 +24,7 @@ model User {
   projects     Project[]
   invoices     Invoice[]
   followUps    FollowUp[]
+  betaApplicant BetaApplicant?
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 }
@@ -116,6 +117,7 @@ model FollowUp {
 enum BetaApplicantStatus {
   PENDING
   APPROVED
+  REGISTERED
   REJECTED
 }
 
@@ -131,6 +133,8 @@ model BetaApplicant {
   inviteToken     String?             @unique
   inviteExpiresAt DateTime?
   claimedAt       DateTime?
+  userId          String?             @unique
+  user            User?               @relation(fields: [userId], references: [id], onDelete: SetNull)
   createdAt       DateTime            @default(now())
   updatedAt       DateTime            @updatedAt
 

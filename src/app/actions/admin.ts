@@ -34,6 +34,7 @@ export async function approveBetaApplicantAction(id: string, originUrl?: string)
       },
     });
 
+    revalidatePath('/admin/beta-applicants');
     revalidatePath('/admin/applicants');
 
     const baseUrl = originUrl || process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
@@ -79,6 +80,7 @@ export async function rejectBetaApplicantAction(id: string) {
       },
     });
 
+    revalidatePath('/admin/beta-applicants');
     revalidatePath('/admin/applicants');
     return { success: true };
   } catch (error) {

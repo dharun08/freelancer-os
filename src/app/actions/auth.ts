@@ -23,50 +23,11 @@ function validatePassword(password: string): string | null {
 }
 
 export async function registerAction(prevState: any, formData: FormData) {
-  const name = formData.get('name') as string;
-  const emailInput = formData.get('email') as string || '';
-  const password = formData.get('password') as string || '';
-  const companyName = formData.get('companyName') as string || '';
-
-  const email = emailInput.trim().toLowerCase();
-
-  if (!name || !email || !password) {
-    return { error: 'Name, email, and password are required.' };
-  }
-
-  const passwordError = validatePassword(password);
-  if (passwordError) {
-    return { error: passwordError };
-  }
-
-  try {
-    const existingUser = await db.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser) {
-      return { error: 'An account with this email address already exists.' };
-    }
-
-    const salt = await bcrypt.genSalt(10);
-    const passwordHash = await bcrypt.hash(password, salt);
-
-    const newUser = await db.user.create({
-      data: {
-        name,
-        email,
-        passwordHash,
-        companyName,
-      },
-    });
-
-    await createSession(newUser.id);
-  } catch (error: any) {
-    console.error('[registerAction Exception]:', error);
-    return { error: error?.message || 'Something went wrong during registration.' };
-  }
-
-  redirect('/dashboard');
+  // Direct public registration is closed during private beta.
+  // Registration is only permitted via approved invitation tokens at /accept-invite.
+  return {
+    error: 'Freelancer OS is currently in invite-only private beta. Direct registration is disabled. Please apply for beta access at /join-beta.',
+  };
 }
 
 export async function loginAction(prevState: any, formData: FormData) {
@@ -170,23 +131,29 @@ export async function acceptInviteAction(prevState: any, formData: FormData) {
     const salt = await bcrypt.genSalt(10);
     const passwordHash = await bcrypt.hash(password, salt);
 
-    const newUser = await db.user.create({
-      data: {
-        name,
-        email: applicant.email.toLowerCase(),
-        passwordHash,
-        companyName: companyName || null,
-        role: 'USER',
-      },
-    });
+    const newUser = await db.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          name,
+          email: applicant.email.toLowerCase(),
+          passwordHash,
+          companyName: companyName || null,
+          role: 'USER',
+        },
+      });
 
-    // Mark invitation as claimed and remove single-use token
-    await db.betaApplicant.update({
-      where: { id: applicant.id },
-      data: {
-        claimedAt: new Date(),
-        inviteToken: null,
-      },
+      // Mark invitation as claimed, update status to REGISTERED, link userId, and clear single-use token
+      await tx.betaApplicant.update({
+        where: { id: applicant.id },
+        data: {
+          status: 'REGISTERED',
+          userId: user.id,
+          claimedAt: new Date(),
+          inviteToken: null,
+        },
+      });
+
+      return user;
     });
 
     await createSession(newUser.id);

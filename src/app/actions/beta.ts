@@ -55,7 +55,7 @@ export async function applyBetaAction(
     const existing = await db.betaApplicant.findFirst({
       where: {
         email,
-        status: { in: ['PENDING', 'APPROVED'] },
+        status: { in: ['PENDING', 'APPROVED', 'REGISTERED'] },
       },
     });
 
