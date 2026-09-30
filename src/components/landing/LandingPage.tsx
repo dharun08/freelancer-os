@@ -193,9 +193,12 @@ export default function LandingPage({ isLoggedIn = false }: LandingPageProps) {
         <div className="relative mx-auto rounded-2xl sm:rounded-3xl border border-border bg-card/60 shadow-2xl shadow-indigo-500/5 p-2 sm:p-3.5 backdrop-blur-sm transition-all overflow-hidden">
           <div className="relative rounded-xl sm:rounded-2xl overflow-hidden bg-slate-950 aspect-video w-full flex items-center justify-center">
             <video
+              src="/freelancer-os-demo.mp4"
               controls
               playsInline
               preload="metadata"
+              width={1280}
+              height={720}
               className="w-full h-full object-contain rounded-xl sm:rounded-2xl"
               title="Freelancer OS Product Walkthrough"
               aria-label="Freelancer OS product walkthrough demo video"

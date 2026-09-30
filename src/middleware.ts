@@ -59,16 +59,14 @@ export async function middleware(request: NextRequest) {
   const session = token ? await decryptSession(token) : null;
   const pathname = request.nextUrl.pathname;
 
-  // Static files, API routes, and favicon checks
-  if (
+  // Static files, media, API routes, and favicon checks
+  const isStaticAsset =
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api/') ||
     pathname === '/favicon.ico' ||
-    pathname.endsWith('.svg') ||
-    pathname.endsWith('.png') ||
-    pathname.endsWith('.jpg') ||
-    pathname.endsWith('.ico')
-  ) {
+    /\.(svg|png|jpg|jpeg|webp|gif|mp4|webm|ogg|mov|ico|woff|woff2|ttf|css|js|map)$/i.test(pathname);
+
+  if (isStaticAsset) {
     return NextResponse.next();
   }
 
@@ -99,5 +97,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico).*)'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|mp4|webm|ogg|mov|ico|woff|woff2|ttf)$).*)'],
 };
