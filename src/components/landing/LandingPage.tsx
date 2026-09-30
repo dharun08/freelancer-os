@@ -179,6 +179,34 @@ export default function LandingPage({ isLoggedIn = false }: LandingPageProps) {
         </div>
       </section>
 
+      {/* Product Walkthrough Video Section */}
+      <section className="pb-20 sm:pb-28 px-4 sm:px-8 max-w-5xl mx-auto w-full text-center">
+        <div className="max-w-2xl mx-auto mb-8 sm:mb-10">
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-foreground">
+            See how Freelancer OS works
+          </h2>
+          <p className="text-sm sm:text-base text-muted-foreground mt-2 leading-relaxed">
+            Take a quick look at how Freelancer OS brings your clients, projects, leads, invoices and follow-ups into one place.
+          </p>
+        </div>
+
+        <div className="relative mx-auto rounded-2xl sm:rounded-3xl border border-border bg-card/60 shadow-2xl shadow-indigo-500/5 p-2 sm:p-3.5 backdrop-blur-sm transition-all overflow-hidden">
+          <div className="relative rounded-xl sm:rounded-2xl overflow-hidden bg-slate-950 aspect-video w-full flex items-center justify-center">
+            <video
+              controls
+              playsInline
+              preload="metadata"
+              className="w-full h-full object-contain rounded-xl sm:rounded-2xl"
+              title="Freelancer OS Product Walkthrough"
+              aria-label="Freelancer OS product walkthrough demo video"
+            >
+              <source src="/freelancer-os-demo.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
+        </div>
+      </section>
+
       {/* 1. Problem Section */}
       <section className="py-16 sm:py-20 bg-muted/20 border-y border-border px-6 sm:px-12">
         <div className="max-w-5xl mx-auto">
