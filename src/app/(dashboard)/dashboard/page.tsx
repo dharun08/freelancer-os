@@ -18,6 +18,7 @@ import {
   BellRing, 
   ArrowUpRight 
 } from 'lucide-react';
+import LeadConversionFunnel from '@/components/dashboard/LeadConversionFunnel';
 
 export const dynamic = 'force-dynamic';
 
@@ -204,6 +205,9 @@ export default async function DashboardPage() {
           </span>
         </div>
       </div>
+
+      {/* Lead Conversion Funnel */}
+      <LeadConversionFunnel leads={leads} />
 
       {/* Main sections */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

@@ -52,17 +52,34 @@ export default function DashboardShell({ children, user }: DashboardShellProps) 
   const [feedbackText, setFeedbackText] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const navigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Clients', href: '/clients', icon: Users },
-    { name: 'Leads', href: '/leads', icon: Target },
-    { name: 'Projects', href: '/projects', icon: FolderKanban },
-    { name: 'Invoices', href: '/invoices', icon: Receipt },
-    { name: 'Follow-Ups', href: '/follow-ups', icon: Clock },
-    { name: 'Revenue Analytics', href: '/revenue', icon: LineChart },
-    { name: 'Settings', href: '/settings', icon: Settings },
+  const navigationSections = [
+    {
+      title: 'WORKSPACE',
+      items: [
+        { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+        { name: 'Leads', href: '/leads', icon: Target },
+        { name: 'Clients', href: '/clients', icon: Users },
+        { name: 'Projects', href: '/projects', icon: FolderKanban },
+        { name: 'Follow-Ups', href: '/follow-ups', icon: Clock },
+        { name: 'Invoices', href: '/invoices', icon: Receipt },
+        { name: 'Revenue Analytics', href: '/revenue', icon: LineChart },
+      ],
+    },
+    {
+      title: 'SYSTEM',
+      items: [
+        { name: 'Settings', href: '/settings', icon: Settings },
+      ],
+    },
     ...(user.isAdmin
-      ? [{ name: 'Beta Applicants', href: '/admin/applicants', icon: ShieldCheck }]
+      ? [
+          {
+            title: 'ADMIN',
+            items: [
+              { name: 'Beta Applicants', href: '/admin/beta-applicants', icon: ShieldCheck },
+            ],
+          },
+        ]
       : []),
   ];
 
@@ -123,26 +140,35 @@ export default function DashboardShell({ children, user }: DashboardShellProps) 
         </div>
 
         {/* Navigation Section */}
-        <nav className="flex-1 space-y-1 px-4 py-6 overflow-y-auto">
-          {navigation.map((item) => {
-            const isActive = pathname === item.href;
-            const Icon = item.icon;
-            return (
-              <Link
-                key={item.name}
-                href={item.href}
-                className={`flex items-center space-x-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 ${
-                  isActive
-                    ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/10'
-                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                }`}
-                onClick={() => setMobileSidebarOpen(false)}
-              >
-                <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-primary-foreground' : ''}`} />
-                <span>{item.name}</span>
-              </Link>
-            );
-          })}
+        <nav className="flex-1 space-y-5 px-4 py-5 overflow-y-auto">
+          {navigationSections.map((section) => (
+            <div key={section.title} className="space-y-1">
+              <p className="px-3 text-[10px] font-bold uppercase tracking-wider text-muted-foreground/70 mb-1.5">
+                {section.title}
+              </p>
+              <div className="space-y-1">
+                {section.items.map((item) => {
+                  const isActive = pathname === item.href;
+                  const Icon = item.icon;
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      className={`flex items-center space-x-3 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                        isActive
+                          ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/10'
+                          : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                      }`}
+                      onClick={() => setMobileSidebarOpen(false)}
+                    >
+                      <Icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-primary-foreground' : ''}`} />
+                      <span>{item.name}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </nav>
 
         {/* User Workspace Info Footer */}
